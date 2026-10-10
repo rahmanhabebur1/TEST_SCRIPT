@@ -1,4 +1,4 @@
--- MD GAMER SCRIPT (Part 1 - UI & Variables)
+-- MD GAMER SCRIPT (Part 1 - Auto Level Farm & Quest Integration)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -11,8 +11,8 @@ local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
 local autoCollectEnabled = false
-local fruitESPEnabled = true
-local playerESPEnabled = true
+local fruitESPEnabled = false
+local playerESPEnabled = false
 local fpsBoostEnabled = false
 
 local autoFarmEnabled = false
@@ -402,7 +402,7 @@ local function createToggleRow(parentContainer, name, defaultState, callback)
         callback(state)
     end)
 end
--- MD GAMER SCRIPT (Part 2 - Combat & Farm Engines)
+-- MD GAMER SCRIPT (Part 2 - Combat Loops & Auto Farm Tween Engine)
 createToggleRow(PvpContainer, "Aimbot Nearest", false, function(enabled)
     aimbotNearestEnabled = enabled
     if enabled then sendNotification("🎯 Aimbot", "Activated!") end
@@ -423,7 +423,7 @@ end)
 
 createToggleRow(FarmContainer, "Auto Level Farm", false, function(enabled)
     autoFarmEnabled = enabled
-    if enabled then sendNotification("⚔️ Auto Farm", "Level Farm Activated!") end
+    if enabled then sendNotification("⚔️ Auto Farm", "Quest & Mob Farm Activated!") end
 end)
 
 createToggleRow(FarmContainer, "Bring Mob (300m)", false, function(enabled)
@@ -522,6 +522,7 @@ task.spawn(function()
     end
 end)
 
+-- Kill Aura Loop
 task.spawn(function()
     while task.wait(0.1) do
         if killAuraEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -640,7 +641,7 @@ task.spawn(function()
                             local dist = (hrp.Position - eHRP.Position).Magnitude
                             if dist <= 300 then
                                 eHRP.CFrame = hrp.CFrame * CFrame.new(0, 0, -3)
-                                eHRP.Velocity = Vector3.new(0, 0, 0)
+                                eHRP.Velocity = Vector3.zero
                                 if enemy:FindFirstChild("Head") then
                                     enemy.Head.CanCollide = false
                                 end
@@ -652,7 +653,7 @@ task.spawn(function()
         end
     end
 end)
--- MD GAMER SCRIPT (Part 3 - Teleports, ESP & Complete Execution)
+-- MD GAMER SCRIPT (Part 3 - Teleports, ESP & Final Execution)
 local function cleanLagEffects(v)
     if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("Explosion") or v:IsA("Beam") or v:IsA("Trail") or v:IsA("Highlight") then
         v:Destroy()
@@ -847,43 +848,44 @@ local function flyTo(targetCFrame)
     if connection then connection:Disconnect() end
 end
 
+-- Island Quest NPC Locations
 local seaIslands = {
     [2753915549] = {
-        ["Starter Island"] = Vector3.new(1090, 16, 1400),
-        ["Jungle"] = Vector3.new(-1240, 12, 380),
-        ["Pirate Village"] = Vector3.new(-1120, 4, 3850),
-        ["Desert"] = Vector3.new(1090, 6, 4360),
-        ["Middle Town"] = Vector3.new(-650, 15, 1500),
-        ["Frozen Village"] = Vector3.new(1150, 7, -1150),
-        ["Marine Ford"] = Vector3.new(-4800, 20, 4200),
-        ["Skypiea"] = Vector3.new(-4850, 725, -2620),
-        ["Prison"] = Vector3.new(4850, 5, 740),
-        ["Colosseum"] = Vector3.new(-1450, 7, -2750),
-        ["Magma Village"] = Vector3.new(-5250, 8, 8500),
-        ["Underwater City"] = Vector3.new(3860, 5, -1920),
-        ["Fountain City"] = Vector3.new(5120, 4, 4100)
+        ["Starter Island (Quest)"] = Vector3.new(1059, 16, 1550),
+        ["Jungle (Quest)"] = Vector3.new(-1600, 37, 153),
+        ["Pirate Village (Quest)"] = Vector3.new(-1140, 4, 3828),
+        ["Desert (Quest)"] = Vector3.new(896, 6, 4389),
+        ["Middle Town (Quest)"] = Vector3.new(-606, 15, 1585),
+        ["Frozen Village (Quest)"] = Vector3.new(1385, 87, -1298),
+        ["Marine Ford (Quest)"] = Vector3.new(-5030, 28, 4322),
+        ["Skypiea (Quest)"] = Vector3.new(-4840, 717, -2620),
+        ["Prison (Quest)"] = Vector3.new(4855, 5, 743),
+        ["Colosseum (Quest)"] = Vector3.new(-1580, 7, -2980),
+        ["Magma Village (Quest)"] = Vector3.new(-5315, 12, 8515),
+        ["Underwater City (Quest)"] = Vector3.new(3864, 6, -1926),
+        ["Fountain City (Quest)"] = Vector3.new(5258, 38, 4050)
     },
     [4442272183] = {
-        ["Cafe"] = Vector3.new(-380, 73, 300),
-        ["Kingdom of Rose"] = Vector3.new(-450, 73, 1500),
-        ["Ushapp's Island"] = Vector3.new(4800, 8, 2800),
-        ["Green Zone"] = Vector3.new(-2400, 73, -3200),
-        ["Graveyard"] = Vector3.new(-5400, 48, -750),
-        ["Snow Mountain"] = Vector3.new(1300, 400, -1300),
-        ["Hot and Cold"] = Vector3.new(-6100, 15, -5000),
-        ["Cursed Ship"] = Vector3.new(900, 125, 3300),
-        ["Ice Castle"] = Vector3.new(5500, 28, -6200),
-        ["Forgotten Island"] = Vector3.new(-3050, 235, -10150)
+        ["Cafe (Safe Area)"] = Vector3.new(-380, 73, 300),
+        ["Kingdom of Rose (Quest)"] = Vector3.new(-426, 73, 1836),
+        ["Ushapp's Island (Quest)"] = Vector3.new(4815, 8, 2845),
+        ["Green Zone (Quest)"] = Vector3.new(-2440, 73, -3215),
+        ["Graveyard (Quest)"] = Vector3.new(-5380, 48, -475),
+        ["Snow Mountain (Quest)"] = Vector3.new(1385, 455, -1295),
+        ["Hot and Cold (Quest)"] = Vector3.new(-6060, 15, -4980),
+        ["Cursed Ship (Quest)"] = Vector3.new(925, 125, 3285),
+        ["Ice Castle (Quest)"] = Vector3.new(5560, 28, -6180),
+        ["Forgotten Island (Quest)"] = Vector3.new(-3050, 235, -10140)
     },
     [7449423635] = {
-        ["Port Town"] = Vector3.new(-2900, 15, 5300),
-        ["Great Tree"] = Vector3.new(2250, 25, -7200),
-        ["Floating Turtle"] = Vector3.new(-13200, 330, -7600),
-        ["Castle on the Sea"] = Vector3.new(-5000, 315, -3000),
-        ["Haunted Castle"] = Vector3.new(-9500, 140, 5500),
-        ["Chocolate Land"] = Vector3.new(100, 25, -12100),
-        ["Ice Cream Land"] = Vector3.new(-900, 65, -11000),
-        ["Tiki Outpost"] = Vector3.new(-16200, 10, 500)
+        ["Port Town (Quest)"] = Vector3.new(-2900, 15, 5380),
+        ["Great Tree (Quest)"] = Vector3.new(2210, 25, -7230),
+        ["Floating Turtle (Quest)"] = Vector3.new(-13230, 332, -7620),
+        ["Castle on Sea (Quest)"] = Vector3.new(-5015, 315, -3020),
+        ["Haunted Castle (Quest)"] = Vector3.new(-9515, 142, 5520),
+        ["Chocolate Land (Quest)"] = Vector3.new(140, 25, -12100),
+        ["Ice Cream Land (Quest)"] = Vector3.new(-880, 65, -10980),
+        ["Tiki Outpost (Quest)"] = Vector3.new(-16230, 10, 480)
     }
 }
 
@@ -907,46 +909,47 @@ for islandName, pos in pairs(currentSeaIslands) do
     btnCorner.Parent = btn
 
     btn.MouseButton1Click:Connect(function()
-        sendNotification("🏝️ Flying...", islandName)
+        sendNotification("🏝️ Flying to Quest NPC...", islandName)
         flyTo(CFrame.new(pos))
     end)
 end
 
 IslandContainer.CanvasSize = UDim2.new(0, 0, 0, totalIslands * 38)
 
+-- Exact Boss Locations
 local seaBosses = {
     [2753915549] = {
-        ["Gorilla King"] = Vector3.new(-1142, 6, 17),
-        ["Bobby"] = Vector3.new(-1133, 15, 4363),
-        ["Chief Warden"] = Vector3.new(4865, 6, 715),
-        ["Swan"] = Vector3.new(5232, 4, 755),
-        ["Chef"] = Vector3.new(3870, 7, -1965),
-        ["Yeti"] = Vector3.new(1208, 107, -1505),
-        ["Mob Leader"] = Vector3.new(-2855, 9, 5354),
-        ["Vice Admiral"] = Vector3.new(-4825, 21, 4325),
-        ["Warden"] = Vector3.new(4865, 6, 715),
-        ["Saber Expert"] = Vector3.new(-1415, 10, 28),
-        ["Fajita"] = Vector3.new(-2325, 16, -3785)
+        ["Gorilla King"] = Vector3.new(-1120, 6, -485),
+        ["Bobby"] = Vector3.new(-1131, 14, 4080),
+        ["Chief Warden"] = Vector3.new(5188, 4, 692),
+        ["Swan"] = Vector3.new(5230, 4, 748),
+        ["Chef"] = Vector3.new(3882, 6, -1940),
+        ["Yeti"] = Vector3.new(1185, 106, -1518),
+        ["Mob Leader"] = Vector3.new(-2850, 7, 5322),
+        ["Vice Admiral"] = Vector3.new(-4805, 21, 4360),
+        ["Warden"] = Vector3.new(4872, 6, 718),
+        ["Saber Expert"] = Vector3.new(-1412, 29, 8),
+        ["Fajita"] = Vector3.new(-2320, 16, -3790)
     },
     [4442272183] = {
-        ["Diamond"] = Vector3.new(413, 116, 2525),
-        ["Awakened Ice Admiral"] = Vector3.new(5815, 61, -6235),
-        ["Tide Keeper"] = Vector3.new(-3725, 74, -11445),
-        ["Smoke Admiral"] = Vector3.new(-5075, 23, -5365),
-        ["Cursed Captain"] = Vector3.new(920, 125, 3290),
-        ["Darkbeard"] = Vector3.new(-6200, 15, -5000),
-        ["Order"] = Vector3.new(-6015, 16, -4930),
-        ["Don Swan"] = Vector3.new(465, 85, 965)
+        ["Diamond"] = Vector3.new(-1560, 195, -200),
+        ["Awakened Ice Admiral"] = Vector3.new(6470, 296, -6840),
+        ["Tide Keeper"] = Vector3.new(-3800, 77, -11400),
+        ["Smoke Admiral"] = Vector3.new(-5080, 24, -5350),
+        ["Cursed Captain"] = Vector3.new(912, 122, 3312),
+        ["Darkbeard"] = Vector3.new(3800, 15, -3500),
+        ["Order"] = Vector3.new(-6200, 15, -5000),
+        ["Don Swan"] = Vector3.new(2285, 15, 808)
     },
     [7449423635] = {
-        ["Stone"] = Vector3.new(-10575, 330, -8760),
-        ["Island Boy"] = Vector3.new(-10605, 330, -8460),
-        ["Hydra Governor"] = Vector3.new(-5205, 10, -1025),
-        ["Longsword"] = Vector3.new(-5815, 8, -1250),
-        ["Beautiful Pirate"] = Vector3.new(5320, 20, 140),
-        ["Cake Queen"] = Vector3.new(-705, 75, -11575),
-        ["Cake Prince"] = Vector3.new(-2050, 15, -12150),
-        ["Rip_Indra"] = Vector3.new(-5320, 400, -2600)
+        ["Stone"] = Vector3.new(-10480, 332, -8470),
+        ["Island Boy"] = Vector3.new(-10530, 332, -8760),
+        ["Hydra Governor"] = Vector3.new(-5200, 12, -1010),
+        ["Longsword"] = Vector3.new(-5820, 12, -1240),
+        ["Beautiful Pirate"] = Vector3.new(-11990, 332, -8850),
+        ["Cake Queen"] = Vector3.new(-710, 381, -11880),
+        ["Cake Prince"] = Vector3.new(-2090, 70, -12110),
+        ["Rip_Indra"] = Vector3.new(-5330, 314, -2820)
     }
 }
 
@@ -970,7 +973,7 @@ for bossName, pos in pairs(currentSeaBosses) do
     btnCorner.Parent = btn
 
     btn.MouseButton1Click:Connect(function()
-        sendNotification("👹 Teleporting...", bossName)
+        sendNotification("👹 Teleporting to Boss...", bossName)
         flyTo(CFrame.new(pos))
     end)
 end
@@ -1149,4 +1152,4 @@ Workspace.ChildAdded:Connect(function()
     checkFruitsForNotification(true)
 end)
 
-sendNotification("🎮 MD GAMER SCRIPT", "Successfully Loaded!")
+sendNotification("🎮 MD GAMER SCRIPT", "Successfully Loaded with Quest Features!")
