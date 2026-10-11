@@ -19,6 +19,7 @@ local playerESPEnabled = true
 local fpsBoostEnabled = false
 
 -- PVP Options
+local aimbotNearestEnabled = false
 local silentAimEnabled = false
 local ignoreMobsEnabled = false
 local ignorePlayersEnabled = false
@@ -225,7 +226,7 @@ PvpContainer.Size = UDim2.new(1, -120, 1, -45)
 PvpContainer.Position = UDim2.new(0, 115, 0, 40)
 PvpContainer.BackgroundTransparency = 1
 PvpContainer.Visible = false
-PvpContainer.CanvasSize = UDim2.new(0, 0, 0, 220)
+PvpContainer.CanvasSize = UDim2.new(0, 0, 0, 260)
 PvpContainer.ScrollBarThickness = 3
 PvpContainer.Parent = MainFrame
 
@@ -253,7 +254,7 @@ ServerContainer.Size = UDim2.new(1, -120, 1, -45)
 ServerContainer.Position = UDim2.new(0, 115, 0, 40)
 ServerContainer.BackgroundTransparency = 1
 ServerContainer.Visible = false
-ServerContainer.CanvasSize = UDim2.new(0, 0, 0, 240)
+ServerContainer.CanvasSize = UDim2.new(0, 0, 0, 160)
 ServerContainer.ScrollBarThickness = 3
 ServerContainer.Parent = MainFrame
 
@@ -350,110 +351,13 @@ local function createToggleRow(parentContainer, name, defaultState, callback)
     end)
 end
 -- ==========================================
--- MD GAMER SCRIPT (Part 2 - Server Hop & PVP)
+-- MD GAMER SCRIPT (Part 2 - Server Hop & PVP Logic)
 -- ==========================================
-local fruitHopRunning = false
-
-local fruitHopBtn = Instance.new("TextButton")
-fruitHopBtn.Size = UDim2.new(1, -10, 0, 34)
-fruitHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-fruitHopBtn.Text = "🍎 Fruit Server Hop (Find & Collect)"
-fruitHopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-fruitHopBtn.Font = Enum.Font.GothamBold
-fruitHopBtn.TextSize = 11
-fruitHopBtn.Parent = ServerContainer
-
-local fruitHopCorner = Instance.new("UICorner")
-fruitHopCorner.CornerRadius = UDim.new(0, 6)
-fruitHopCorner.Parent = fruitHopBtn
-
-local function isFruit(obj)
-    if not (obj:IsA("Tool") or string.find(obj.Name, "Fruit")) then return false end
-    return (obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")) ~= nil
-end
-
-local function hasSpawnedFruit()
-    for _, obj in ipairs(Workspace:GetChildren()) do
-        if isFruit(obj) then
-            local handle = obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")
-            if handle then
-                return true, obj
-            end
-        end
-    end
-    return false, nil
-end
-
-fruitHopBtn.MouseButton1Click:Connect(function()
-    if fruitHopRunning then
-        fruitHopRunning = false
-        fruitHopBtn.Text = "🍎 Fruit Server Hop (Find & Collect)"
-        fruitHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-        sendNotification("🍎 Fruit Hop", "Stopped searching.")
-        return
-    end
-
-    fruitHopRunning = true
-    fruitHopBtn.Text = "🛑 Stop Fruit Hop"
-    fruitHopBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    
-    sendNotification("🌐 Fruit Hop", "Searching for servers with spawned fruits...")
-
-    task.spawn(function()
-        while fruitHopRunning do
-            local found, fruitObj = hasSpawnedFruit()
-            if found and fruitObj then
-                fruitHopRunning = false
-                fruitHopBtn.Text = "🍎 Fruit Server Hop (Find & Collect)"
-                fruitHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-                
-                sendNotification("🍎 Success!", "Fruit found in this server! Collecting...")
-                
-                local handle = fruitObj:FindFirstChild("Handle") or fruitObj:FindFirstChildOfClass("BasePart")
-                if handle then
-                    local char = LocalPlayer.Character
-                    if char and char:FindFirstChild("HumanoidRootPart") then
-                        local hrp = char.HumanoidRootPart
-                        local distance = (hrp.Position - handle.Position).Magnitude
-                        local duration = distance / 250
-                        local startTime = tick()
-                        local startCFrame = hrp.CFrame
-                        local targetCFrame = handle.CFrame
-                        local connection
-                        
-                        connection = RunService.RenderStepped:Connect(function()
-                            local elapsed = tick() - startTime
-                            local alpha = math.clamp(elapsed / duration, 0, 1)
-                            if hrp and hrp.Parent then
-                                hrp.Velocity = Vector3.zero
-                                hrp.CFrame = startCFrame:Lerp(targetCFrame, alpha)
-                            end
-                            if alpha >= 1 or not hrp or not hrp.Parent then
-                                connection:Disconnect()
-                            end
-                        end)
-                        task.wait(duration)
-                        if connection then connection:Disconnect() end
-                    end
-                end
-                break
-            end
-
-            sendNotification("🌐 Fruit Hop", "No fruit here. Hopping to next server...")
-            pcall(function()
-                TeleportService:Teleport(game.PlaceId, LocalPlayer)
-            end)
-
-            task.wait(8)
-        end
-    end)
-end)
-
 local serverHopBtn = Instance.new("TextButton")
 serverHopBtn.Size = UDim2.new(1, -10, 0, 34)
-serverHopBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 35)
+serverHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 serverHopBtn.Text = "🌐 Browser Top-Right Server Hop"
-serverHopBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+serverHopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 serverHopBtn.Font = Enum.Font.GothamBold
 serverHopBtn.TextSize = 11
 serverHopBtn.Parent = ServerContainer
@@ -467,6 +371,7 @@ serverHopBtn.MouseButton1Click:Connect(function()
     task.spawn(function()
         pcall(function()
             local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+            
             local serverBrowser = playerGui:FindFirstChild("ServerBrowser", true) or playerGui:FindFirstChild("ServerBrowserUI", true)
             
             if not serverBrowser and ReplicatedStorage:FindFirstChild("Remotes") then
@@ -555,7 +460,11 @@ copyJobBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-createToggleRow(PvpContainer, "True Target Lock (Silent)", false, function(enabled)
+createToggleRow(PvpContainer, "Aimbot Nearest", false, function(enabled)
+    aimbotNearestEnabled = enabled
+end)
+
+createToggleRow(PvpContainer, "Silent Aim (Attack Lock)", false, function(enabled)
     silentAimEnabled = enabled
 end)
 
@@ -567,27 +476,9 @@ createToggleRow(PvpContainer, "Ignore Players", false, function(enabled)
     ignorePlayersEnabled = enabled
 end)
 
-createToggleRow(PvpContainer, "Kill Aura (Dynamic Range)", false, function(enabled)
+createToggleRow(PvpContainer, "Kill Aura (No Anim)", false, function(enabled)
     killAuraEnabled = enabled
 end)
-
-local function getEquippedWeaponRange()
-    local char = LocalPlayer.Character
-    if not char then return 50 end
-    local tool = char:FindFirstChildOfClass("Tool")
-    if not tool then return 40 end
-    
-    local name = string.lower(tool.Name)
-    if name:find("gravity") or name:find("mammoth") or name:find("leo") or name:find("dragon") then
-        return 80
-    elseif name:find("rubber") or name:find("eagle") or name:find("falcon") or name:find("light") or name:find("ice") or name:find("diamond") then
-        return 65
-    elseif name:find("sword") or name:find("katana") or name:find("db") or name:find("dark blade") then
-        return 45
-    else
-        return 55
-    end
-end
 
 task.spawn(function()
     while task.wait(0.1) do
@@ -596,11 +487,9 @@ task.spawn(function()
                 local char = LocalPlayer.Character
                 local hrp = char.HumanoidRootPart
                 local equippedTool = char:FindFirstChildOfClass("Tool")
-                local dynamicRange = getEquippedWeaponRange()
-                
                 if equippedTool then
                     local function checkAndAttack(targetHRP)
-                        if (hrp.Position - targetHRP.Position).Magnitude <= dynamicRange then
+                        if (hrp.Position - targetHRP.Position).Magnitude <= 50 then
                             equippedTool:Activate()
                         end
                     end
@@ -628,56 +517,74 @@ task.spawn(function()
     end
 end)
 -- ==========================================
--- MD GAMER SCRIPT (Part 3 - True Target & Islands)
+-- MD GAMER SCRIPT (Part 3 - PVP Engine & Fly)
 -- ==========================================
+local function getClosestCombatTarget()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+    local hrp = char.HumanoidRootPart
+    
+    local nearestTarget = nil
+    local shortestDist = math.huge
+
+    if not ignorePlayersEnabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local pHum = player.Character:FindFirstChildOfClass("Humanoid")
+                if pHum and pHum.Health > 0 then
+                    local dist = (hrp.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                    if dist < shortestDist then
+                        shortestDist = dist
+                        nearestTarget = player.Character.HumanoidRootPart
+                    end
+                end
+            end
+        end
+    end
+
+    if not ignoreMobsEnabled then
+        local enemiesFolder = Workspace:FindFirstChild("Enemies")
+        if enemiesFolder then
+            for _, enemy in ipairs(enemiesFolder:GetChildren()) do
+                local eHRP = enemy:FindFirstChild("HumanoidRootPart")
+                local eHum = enemy:FindFirstChildOfClass("Humanoid")
+                if eHRP and eHum and eHum.Health > 0 then
+                    local dist = (hrp.Position - eHRP.Position).Magnitude
+                    if dist < shortestDist then
+                        shortestDist = dist
+                        nearestTarget = eHRP
+                    end
+                end
+            end
+        end
+    end
+
+    return nearestTarget
+end
+
 RunService.RenderStepped:Connect(function()
-    if silentAimEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+    if aimbotNearestEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         pcall(function()
             local hrp = LocalPlayer.Character.HumanoidRootPart
-            local nearestTarget = nil
-            local shortestDist = getEquippedWeaponRange()
-
-            if not ignorePlayersEnabled then
-                for _, player in ipairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        local pHum = player.Character:FindFirstChildOfClass("Humanoid")
-                        if pHum and pHum.Health > 0 then
-                            local dist = (hrp.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                            if dist < shortestDist then
-                                shortestDist = dist
-                                nearestTarget = player.Character.HumanoidRootPart
-                            end
-                        end
-                    end
-                end
-            end
-
-            if not ignoreMobsEnabled then
-                local enemiesFolder = Workspace:FindFirstChild("Enemies")
-                if enemiesFolder then
-                    for _, enemy in ipairs(enemiesFolder:GetChildren()) do
-                        local eHRP = enemy:FindFirstChild("HumanoidRootPart")
-                        local eHum = enemy:FindFirstChildOfClass("Humanoid")
-                        if eHRP and eHum and eHum.Health > 0 then
-                            local dist = (hrp.Position - eHRP.Position).Magnitude
-                            if dist < shortestDist then
-                                shortestDist = dist
-                                nearestTarget = eHRP
-                            end
-                        end
-                    end
-                end
-            end
-
+            local nearestTarget = getClosestCombatTarget()
             if nearestTarget then
-                local equippedTool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-                if equippedTool then
-                    pcall(function()
-                        if equippedTool:FindFirstChild("Handle") then
-                            local direction = (nearestTarget.Position - hrp.Position).Unit
-                            equippedTool.Handle.CFrame = CFrame.new(equippedTool.Handle.Position, equippedTool.Handle.Position + direction)
-                        end
-                    end)
+                local targetPos = Vector3.new(nearestTarget.Position.X, hrp.Position.Y, nearestTarget.Position.Z)
+                hrp.CFrame = CFrame.new(hrp.Position, targetPos)
+            end
+        end)
+    end
+
+    if silentAimEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        pcall(function()
+            local char = LocalPlayer.Character
+            local hrp = char.HumanoidRootPart
+            local tool = char:FindFirstChildOfClass("Tool")
+            
+            if tool then
+                local target = getClosestCombatTarget()
+                if target then
+                    local targetPos = Vector3.new(target.Position.X, hrp.Position.Y, target.Position.Z)
+                    hrp.CFrame = CFrame.new(hrp.Position, targetPos)
                 end
             end
         end)
@@ -841,6 +748,11 @@ IslandContainer.CanvasSize = UDim2.new(0, 0, 0, totalIslands * 38)
 -- ==========================================
 -- MD GAMER SCRIPT (Part 4 - ESP & Main Engine)
 -- ==========================================
+local function isFruit(obj)
+    if not (obj:IsA("Tool") or string.find(obj.Name, "Fruit")) then return false end
+    return (obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")) ~= nil
+end
+
 local function checkFruitsForNotification(isNewSpawn)
     for _, obj in ipairs(Workspace:GetChildren()) do
         if isFruit(obj) and not notifiedFruits[obj] then
