@@ -1,4 +1,6 @@
--- MD GAMER SCRIPT (Part 1 - Delta Console & UI Base)
+-- ==========================================
+-- MD GAMER SCRIPT (Part 1 - Services & UI)
+-- ==========================================
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -347,11 +349,13 @@ local function createToggleRow(parentContainer, name, defaultState, callback)
         callback(state)
     end)
 end
--- MD GAMER SCRIPT (Part 2 - Delta Console Output & Hop Logic)
+-- ==========================================
+-- MD GAMER SCRIPT (Part 2 - Server Hop & PVP Logic)
+-- ==========================================
 local serverHopBtn = Instance.new("TextButton")
 serverHopBtn.Size = UDim2.new(1, -10, 0, 34)
 serverHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-serverHopBtn.Text = "🌐 Server Hop (Delta Engine)"
+serverHopBtn.Text = "🌐 Browser Top-Right Server Hop"
 serverHopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 serverHopBtn.Font = Enum.Font.GothamBold
 serverHopBtn.TextSize = 11
@@ -361,60 +365,57 @@ local serverHopCorner = Instance.new("UICorner")
 serverHopCorner.CornerRadius = UDim.new(0, 6)
 serverHopCorner.Parent = serverHopBtn
 
--- ডেল্টা আউটপুট কনসোল ট্র্যাক করার উপযোগী বাইপাস হপ
 serverHopBtn.MouseButton1Click:Connect(function()
-    sendNotification("🌐 Delta Hop", "Scanning output servers...")
+    sendNotification("🌐 Server Hop", "Scanning top-right server browser...")
     task.spawn(function()
-        local PlaceID = game.PlaceId
-        local AllServers = {}
-        local cursor = ""
-        
-        print("[MD_GAMER]: Fetching server list via Delta output...")
-        
-        repeat
-            local success, body = pcall(function()
-                local url = "https://games.roproxy.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
-                if cursor ~= "" then
-                    url = url .. "&cursor=" .. cursor
-                end
-                return game:HttpGet(url)
-            end)
+        pcall(function()
+            local playerGui = LocalPlayer:WaitForChild("PlayerGui")
             
-            if success and body then
-                local decode = HttpService:JSONDecode(body)
-                if decode and decode.data then
-                    for _, v in ipairs(decode.data) do
-                        if type(v) == "table" and v.id and v.playing and v.maxPlayers then
-                            if v.id ~= game.JobId and v.playing < v.maxPlayers then
-                                table.insert(AllServers, v.id)
-                            end
+            local serverBrowser = playerGui:FindFirstChild("ServerBrowser", true) or playerGui:FindFirstChild("ServerBrowserUI", true)
+            
+            if not serverBrowser and ReplicatedStorage:FindFirstChild("Remotes") then
+                pcall(function()
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("ServerBrowser")
+                end)
+                task.wait(0.6)
+                serverBrowser = playerGui:FindFirstChild("ServerBrowser", true) or playerGui:FindFirstChild("ServerBrowserUI", true)
+            end
+
+            if serverBrowser then
+                local refreshBtn = serverBrowser:FindFirstChild("Refresh", true)
+                if refreshBtn then
+                    if firesignal then
+                        firesignal(refreshBtn.MouseButton1Click)
+                    elseif getconnections then
+                        for _, conn in ipairs(getconnections(refreshBtn.MouseButton1Click)) do conn:Fire() end
+                    end
+                    task.wait(0.8)
+                end
+                
+                local bestJoinBtn = nil
+                for _, obj in ipairs(serverBrowser:GetDescendants()) do
+                    if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+                        if obj.Name == "Join" or string.lower(obj.Text):find("join") then
+                            bestJoinBtn = obj
+                            break
                         end
                     end
-                    cursor = decode.nextPageCursor
-                else
-                    break
                 end
-            else
-                break
+                
+                if bestJoinBtn then
+                    sendNotification("🌐 Connecting...", "Joining best browser server...")
+                    if firesignal then
+                        firesignal(bestJoinBtn.MouseButton1Click)
+                    elseif getconnections then
+                        for _, conn in ipairs(getconnections(bestJoinBtn.MouseButton1Click)) do conn:Fire() end
+                    end
+                    return
+                end
             end
-        until cursor == nil or #AllServers > 0
-
-        print("[MD_GAMER]: Total valid servers found: " .. tostring(#AllServers))
-
-        if #AllServers > 0 then
-            local randomTarget = AllServers[math.random(1, #AllServers)]
-            sendNotification("🌐 Connecting...", "Switching server now...")
-            print("[MD_GAMER]: Teleporting to JobID -> " .. tostring(randomTarget))
             
-            pcall(function()
-                TeleportService:TeleportToPlaceInstance(PlaceID, randomTarget, LocalPlayer)
-            end)
-        else
-            sendNotification("⚠️ Notice", "Using fallback server...")
-            pcall(function()
-                TeleportService:Teleport(PlaceID, LocalPlayer)
-            end)
-        end
+            sendNotification("⚠️ Notice", "Executing safe fallback hop...")
+            TeleportService:Teleport(game.PlaceId, LocalPlayer)
+        end)
     end)
 end)
 
@@ -432,7 +433,7 @@ rejoinCorner.CornerRadius = UDim.new(0, 6)
 rejoinCorner.Parent = rejoinBtn
 
 rejoinBtn.MouseButton1Click:Connect(function()
-    sendNotification("🔄 Rejoining...", "Connecting...")
+    sendNotification("🔄 Rejoining...", "Reconnecting...")
     pcall(function()
         TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
     end)
@@ -510,7 +511,9 @@ task.spawn(function()
         end
     end
 end)
--- MD GAMER SCRIPT (Part 3 - PVP, Fly, Islands & ESP Engines)
+-- ==========================================
+-- MD GAMER SCRIPT (Part 3 - PVP Engine & Fly)
+-- ==========================================
 RunService.RenderStepped:Connect(function()
     if aimbotNearestEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         pcall(function()
@@ -712,7 +715,9 @@ for islandName, pos in pairs(currentSeaIslands) do
 end
 
 IslandContainer.CanvasSize = UDim2.new(0, 0, 0, totalIslands * 38)
-
+-- ==========================================
+-- MD GAMER SCRIPT (Part 4 - ESP & Main Engine)
+-- ==========================================
 local function isFruit(obj)
     if not (obj:IsA("Tool") or string.find(obj.Name, "Fruit")) then return false end
     return (obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")) ~= nil
