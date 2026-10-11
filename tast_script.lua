@@ -1,4 +1,4 @@
--- MD GAMER SCRIPT (Part 1 - UI & Core Setup)
+-- MD GAMER SCRIPT (Part 1 - Delta Console & UI Base)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -12,8 +12,8 @@ local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
 local autoCollectEnabled = false
-local fruitESPEnabled = true
-local playerESPEnabled = true
+local fruitESPEnabled = false
+local playerESPEnabled = false
 local fpsBoostEnabled = false
 
 -- PVP Options
@@ -347,11 +347,11 @@ local function createToggleRow(parentContainer, name, defaultState, callback)
         callback(state)
     end)
 end
--- MD GAMER SCRIPT (Part 2 - Pro Hop Module Logic)
+-- MD GAMER SCRIPT (Part 2 - Delta Console Output & Hop Logic)
 local serverHopBtn = Instance.new("TextButton")
 serverHopBtn.Size = UDim2.new(1, -10, 0, 34)
 serverHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-serverHopBtn.Text = "🌐 Server Hop (Auto Change)"
+serverHopBtn.Text = "🌐 Server Hop (Delta Engine)"
 serverHopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 serverHopBtn.Font = Enum.Font.GothamBold
 serverHopBtn.TextSize = 11
@@ -361,71 +361,58 @@ local serverHopCorner = Instance.new("UICorner")
 serverHopCorner.CornerRadius = UDim.new(0, 6)
 serverHopCorner.Parent = serverHopBtn
 
--- প্রো থার্ড-পার্টি অননার্ড হপ মডিউল (Error 773 Bypass Engine)
+-- ডেল্টা আউটপুট কনসোল ট্র্যাক করার উপযোগী বাইপাস হপ
 serverHopBtn.MouseButton1Click:Connect(function()
-    sendNotification("🌐 Server Hop", "Searching best server via Pro Engine...")
+    sendNotification("🌐 Delta Hop", "Scanning output servers...")
     task.spawn(function()
-        local placeId = game.PlaceId
-        local jobId = game.JobId
-        local foundServer = nil
-
-        local function fetchServers(cursor)
-            local url = "https://games.roproxy.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
-            if cursor then
-                url = url .. "&cursor=" .. cursor
-            end
-            local success, raw = pcall(function()
+        local PlaceID = game.PlaceId
+        local AllServers = {}
+        local cursor = ""
+        
+        print("[MD_GAMER]: Fetching server list via Delta output...")
+        
+        repeat
+            local success, body = pcall(function()
+                local url = "https://games.roproxy.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
+                if cursor ~= "" then
+                    url = url .. "&cursor=" .. cursor
+                end
                 return game:HttpGet(url)
             end)
-            if success and raw then
-                return HttpService:JSONDecode(raw)
-            end
-            return nil
-        end
-
-        local cursor = nil
-        local validList = {}
-
-        for attempt = 1, 3 do
-            local result = fetchServers(cursor)
-            if result and result.data then
-                for _, s in ipairs(result.data) do
-                    if type(s) == "table" and s.id and s.playing and s.maxPlayers then
-                        if s.id ~= jobId and s.playing < s.maxPlayers and s.playing > 1 then
-                            table.insert(validList, s)
+            
+            if success and body then
+                local decode = HttpService:JSONDecode(body)
+                if decode and decode.data then
+                    for _, v in ipairs(decode.data) do
+                        if type(v) == "table" and v.id and v.playing and v.maxPlayers then
+                            if v.id ~= game.JobId and v.playing < v.maxPlayers then
+                                table.insert(AllServers, v.id)
+                            end
                         end
                     end
-                end
-                if #validList >= 10 or not result.nextPageCursor then
-                    break
+                    cursor = decode.nextPageCursor
                 else
-                    cursor = result.nextPageCursor
+                    break
                 end
+            else
+                break
             end
-            task.wait(0.2)
-        end
+        until cursor == nil or #AllServers > 0
 
-        if #validList > 0 then
-            table.sort(validList, function(a, b) return a.playing < b.playing end)
-            foundServer = validList[math.random(1, math.min(3, #validList))].id
-        end
+        print("[MD_GAMER]: Total valid servers found: " .. tostring(#AllServers))
 
-        if foundServer then
-            sendNotification("🌐 Teleporting...", "Connecting safely...")
-            local tpSuccess = pcall(function()
-                TeleportService:TeleportToPlaceInstance(placeId, foundServer, LocalPlayer)
-            end)
-
-            if not tpSuccess then
-                sendNotification("⚠️ Teleport Retry", "Trying secondary channel...")
-                pcall(function()
-                    TeleportService:Teleport(placeId, LocalPlayer)
-                end)
-            end
-        else
-            sendNotification("⚠️ Server Hop", "Retrying random server...")
+        if #AllServers > 0 then
+            local randomTarget = AllServers[math.random(1, #AllServers)]
+            sendNotification("🌐 Connecting...", "Switching server now...")
+            print("[MD_GAMER]: Teleporting to JobID -> " .. tostring(randomTarget))
+            
             pcall(function()
-                TeleportService:Teleport(placeId, LocalPlayer)
+                TeleportService:TeleportToPlaceInstance(PlaceID, randomTarget, LocalPlayer)
+            end)
+        else
+            sendNotification("⚠️ Notice", "Using fallback server...")
+            pcall(function()
+                TeleportService:Teleport(PlaceID, LocalPlayer)
             end)
         end
     end)
@@ -445,7 +432,7 @@ rejoinCorner.CornerRadius = UDim.new(0, 6)
 rejoinCorner.Parent = rejoinBtn
 
 rejoinBtn.MouseButton1Click:Connect(function()
-    sendNotification("🔄 Rejoining...", "Connecting to same server...")
+    sendNotification("🔄 Rejoining...", "Connecting...")
     pcall(function()
         TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
     end)
@@ -467,15 +454,12 @@ copyJobCorner.Parent = copyJobBtn
 copyJobBtn.MouseButton1Click:Connect(function()
     if setclipboard then
         setclipboard(game.JobId)
-        sendNotification("📋 Copied!", "Server JobID copied to clipboard.")
-    else
-        sendNotification("⚠️ Error", "Clipboard not supported!")
+        sendNotification("📋 Copied!", "JobID copied to clipboard.")
     end
 end)
 
 createToggleRow(PvpContainer, "Aimbot Nearest", false, function(enabled)
     aimbotNearestEnabled = enabled
-    if enabled then sendNotification("🎯 Aimbot", "Activated!") end
 end)
 
 createToggleRow(PvpContainer, "Ignore Mobs", false, function(enabled)
@@ -488,7 +472,6 @@ end)
 
 createToggleRow(PvpContainer, "Kill Aura (No Anim)", false, function(enabled)
     killAuraEnabled = enabled
-    if enabled then sendNotification("⚡ Kill Aura", "Active (50m Range)") end
 end)
 
 task.spawn(function()
@@ -498,35 +481,27 @@ task.spawn(function()
                 local char = LocalPlayer.Character
                 local hrp = char.HumanoidRootPart
                 local equippedTool = char:FindFirstChildOfClass("Tool")
-
                 if equippedTool then
                     local function checkAndAttack(targetHRP)
-                        local dist = (hrp.Position - targetHRP.Position).Magnitude
-                        if dist <= 50 then
+                        if (hrp.Position - targetHRP.Position).Magnitude <= 50 then
                             equippedTool:Activate()
                         end
                     end
-
                     if not ignorePlayersEnabled then
                         for _, player in ipairs(Players:GetPlayers()) do
                             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                                 local pHum = player.Character:FindFirstChildOfClass("Humanoid")
-                                if pHum and pHum.Health > 0 then
-                                    checkAndAttack(player.Character.HumanoidRootPart)
-                                end
+                                if pHum and pHum.Health > 0 then checkAndAttack(player.Character.HumanoidRootPart) end
                             end
                         end
                     end
-
                     if not ignoreMobsEnabled then
                         local enemiesFolder = Workspace:FindFirstChild("Enemies")
                         if enemiesFolder then
                             for _, enemy in ipairs(enemiesFolder:GetChildren()) do
                                 local eHRP = enemy:FindFirstChild("HumanoidRootPart")
                                 local eHum = enemy:FindFirstChildOfClass("Humanoid")
-                                if eHRP and eHum and eHum.Health > 0 then
-                                    checkAndAttack(eHRP)
-                                end
+                                if eHRP and eHum and eHum.Health > 0 then checkAndAttack(eHRP) end
                             end
                         end
                     end
