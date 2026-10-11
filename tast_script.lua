@@ -374,6 +374,11 @@ local function createToggleRow(parentContainer, name, defaultState, callback)
         callback(state)
     end)
 end
+
+local function isFruit(obj)
+    if not (obj:IsA("Tool") or string.find(obj.Name, "Fruit")) then return false end
+    return (obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")) ~= nil
+end
 -- ==========================================
 -- FLOATING BUTTONS SETUP (70% Transparent)
 -- ==========================================
@@ -389,6 +394,44 @@ elseif syn and syn.protect_gui then
     FloatingHolder.Parent = CoreGui
 else
     FloatingHolder.Parent = CoreGui or LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local function instantCollectAction()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if not hrp then return end
+    
+    local found = false
+    local fruitHandle = nil
+    local fruitName = ""
+    
+    for _, obj in pairs(Workspace:GetChildren()) do
+        if isFruit(obj) then
+            local handle = obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")
+            if handle then
+                fruitHandle = handle
+                fruitName = obj.Name
+                found = true
+                break
+            end
+        end
+    end
+    
+    if found and fruitHandle then
+        local originalPos = hrp.CFrame
+        hrp.CFrame = fruitHandle.CFrame
+        sendNotification("MOVEMENT", "Teleported to " .. fruitName .. "! Returning in 3s...")
+        
+        task.wait(3.0)
+        
+        if hrp and hrp.Parent then
+            hrp.CFrame = originalPos
+            sendNotification("MOVEMENT", "Fruit collected & returned back!")
+        end
+    else
+        sendNotification("MOVEMENT", "No natural or dropped fruit found!")
+    end
 end
 
 -- 1. COLLECT FLOATING BUTTON
@@ -410,40 +453,7 @@ local fcCorner = Instance.new("UICorner")
 fcCorner.CornerRadius = UDim.new(0, 6)
 fcCorner.Parent = floatCollectBtn
 
-floatCollectBtn.MouseButton1Click:Connect(function()
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    
-    if not hrp then return end
-    
-    local found = false
-    local fruitObj = nil
-    
-    for _, obj in pairs(Workspace:GetChildren()) do
-        if obj:IsA("Tool") and (obj.Name:find("Fruit") or obj.Name:find("Fruit ")) then
-            if obj:FindFirstChild("Handle") then
-                fruitObj = obj
-                found = true
-                break
-            end
-        end
-    end
-    
-    if found and fruitObj then
-        local originalPos = hrp.CFrame
-        hrp.CFrame = fruitObj.Handle.CFrame
-        sendNotification("MOVEMENT", "Teleported to fruit! Returning in 3s...")
-        
-        task.wait(3.0)
-        
-        if hrp and hrp.Parent then
-            hrp.CFrame = originalPos
-            sendNotification("MOVEMENT", "Fruit collected & returned back!")
-        end
-    else
-        sendNotification("MOVEMENT", "No fruit found on the floor!")
-    end
-end)
+floatCollectBtn.MouseButton1Click:Connect(instantCollectAction)
 
 -- 2. SPEED FLOATING BUTTON
 local speedActive = false
@@ -503,40 +513,7 @@ local tpFruitCorner = Instance.new("UICorner")
 tpFruitCorner.CornerRadius = UDim.new(0, 6)
 tpFruitCorner.Parent = tpFruitBtn
 
-tpFruitBtn.MouseButton1Click:Connect(function()
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    
-    if not hrp then return end
-    
-    local found = false
-    local fruitObj = nil
-    
-    for _, obj in pairs(Workspace:GetChildren()) do
-        if obj:IsA("Tool") and (obj.Name:find("Fruit") or obj.Name:find("Fruit ")) then
-            if obj:FindFirstChild("Handle") then
-                fruitObj = obj
-                found = true
-                break
-            end
-        end
-    end
-    
-    if found and fruitObj then
-        local originalPos = hrp.CFrame
-        hrp.CFrame = fruitObj.Handle.CFrame
-        sendNotification("MOVEMENT", "Teleported to fruit! Returning in 3s...")
-        
-        task.wait(3.0)
-        
-        if hrp and hrp.Parent then
-            hrp.CFrame = originalPos
-            sendNotification("MOVEMENT", "Fruit collected & returned back!")
-        end
-    else
-        sendNotification("MOVEMENT", "No fruit found on the floor!")
-    end
-end)
+tpFruitBtn.MouseButton1Click:Connect(instantCollectAction)
 
 createToggleRow(MovementContainer, "2. SMOOTH SPEED 🏃🏻‍♂️", false, function(enabled)
     speedActive = enabled
@@ -933,11 +910,6 @@ IslandContainer.CanvasSize = UDim2.new(0, 0, 0, totalIslands * 38)
 -- ==========================================
 -- MD GAMER SCRIPT (Part 4 - ESP & Main Engine)
 -- ==========================================
-local function isFruit(obj)
-    if not (obj:IsA("Tool") or string.find(obj.Name, "Fruit")) then return false end
-    return (obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")) ~= nil
-end
-
 local function checkFruitsForNotification(isNewSpawn)
     for _, obj in ipairs(Workspace:GetChildren()) do
         if isFruit(obj) and not notifiedFruits[obj] then
