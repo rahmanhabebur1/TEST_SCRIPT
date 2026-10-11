@@ -13,7 +13,7 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
-local autoCollectEnabled = true
+local autoCollectEnabled = false
 local fruitESPEnabled = true
 local playerESPEnabled = true
 local fpsBoostEnabled = true
@@ -123,7 +123,7 @@ BtnStroke.Parent = ToggleButton
 local BtnIcon = Instance.new("TextLabel")
 BtnIcon.Size = UDim2.new(1, 0, 1, 0)
 BtnIcon.BackgroundTransparency = 1
-BtnIcon.Text = "🏆"
+BtnIcon.Text = "🎮"
 BtnIcon.TextSize = 22
 BtnIcon.Parent = ToggleButton
 
@@ -253,7 +253,7 @@ ServerContainer.Size = UDim2.new(1, -120, 1, -45)
 ServerContainer.Position = UDim2.new(0, 115, 0, 40)
 ServerContainer.BackgroundTransparency = 1
 ServerContainer.Visible = false
-ServerContainer.CanvasSize = UDim2.new(0, 0, 0, 160)
+ServerContainer.CanvasSize = UDim2.new(0, 0, 0, 240)
 ServerContainer.ScrollBarThickness = 3
 ServerContainer.Parent = MainFrame
 
@@ -352,11 +352,110 @@ end
 -- ==========================================
 -- MD GAMER SCRIPT (Part 2 - Server Hop & PVP Logic)
 -- ==========================================
+
+-- নতুন ফ্রুট সার্ভার হপ লজিক
+local fruitHopRunning = false
+
+local fruitHopBtn = Instance.new("TextButton")
+fruitHopBtn.Size = UDim2.new(1, -10, 0, 34)
+fruitHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+fruitHopBtn.Text = "🍎 Fruit Server Hop (Find & Collect)"
+fruitHopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+fruitHopBtn.Font = Enum.Font.GothamBold
+fruitHopBtn.TextSize = 11
+fruitHopBtn.Parent = ServerContainer
+
+local fruitHopCorner = Instance.new("UICorner")
+fruitHopCorner.CornerRadius = UDim.new(0, 6)
+fruitHopCorner.Parent = fruitHopBtn
+
+local function isFruit(obj)
+    if not (obj:IsA("Tool") or string.find(obj.Name, "Fruit")) then return false end
+    return (obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")) ~= nil
+end
+
+local function hasSpawnedFruit()
+    for _, obj in ipairs(Workspace:GetChildren()) do
+        if isFruit(obj) then
+            local handle = obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")
+            if handle then
+                return true, obj
+            end
+        end
+    end
+    return false, nil
+end
+
+fruitHopBtn.MouseButton1Click:Connect(function()
+    if fruitHopRunning then
+        fruitHopRunning = false
+        fruitHopBtn.Text = "🍎 Fruit Server Hop (Find & Collect)"
+        fruitHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+        sendNotification("🍎 Fruit Hop", "Stopped searching.")
+        return
+    end
+
+    fruitHopRunning = true
+    fruitHopBtn.Text = "🛑 Stop Fruit Hop"
+    fruitHopBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    
+    sendNotification("🌐 Fruit Hop", "Searching for servers with spawned fruits...")
+
+    task.spawn(function()
+        while fruitHopRunning do
+            local found, fruitObj = hasSpawnedFruit()
+            if found and fruitObj then
+                fruitHopRunning = false
+                fruitHopBtn.Text = "🍎 Fruit Server Hop (Find & Collect)"
+                fruitHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+                
+                sendNotification("🍎 Success!", "Fruit found in this server! Collecting...")
+                
+                local handle = fruitObj:FindFirstChild("Handle") or fruitObj:FindFirstChildOfClass("BasePart")
+                if handle then
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        local hrp = char.HumanoidRootPart
+                        local distance = (hrp.Position - handle.Position).Magnitude
+                        local duration = distance / 250
+                        local startTime = tick()
+                        local startCFrame = hrp.CFrame
+                        local targetCFrame = handle.CFrame
+                        local connection
+                        
+                        connection = RunService.RenderStepped:Connect(function()
+                            local elapsed = tick() - startTime
+                            local alpha = math.clamp(elapsed / duration, 0, 1)
+                            if hrp and hrp.Parent then
+                                hrp.Velocity = Vector3.zero
+                                hrp.CFrame = startCFrame:Lerp(targetCFrame, alpha)
+                            end
+                            if alpha >= 1 or not hrp or not hrp.Parent then
+                                connection:Disconnect()
+                            end
+                        end)
+                        task.wait(duration)
+                        if connection then connection:Disconnect() end
+                    end
+                end
+                break
+            end
+
+            sendNotification("🌐 Fruit Hop", "No fruit here. Hopping to next server...")
+            pcall(function()
+                TeleportService:Teleport(game.PlaceId, LocalPlayer)
+            end)
+
+            task.wait(8)
+        end
+    end)
+end)
+
 local serverHopBtn = Instance.new("TextButton")
 serverHopBtn.Size = UDim2.new(1, -10, 0, 34)
-serverHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+serverHopBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 35)
 serverHopBtn.Text = "🌐 Browser Top-Right Server Hop"
-serverHopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+serverHopBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
 serverHopBtn.Font = Enum.Font.GothamBold
 serverHopBtn.TextSize = 11
 serverHopBtn.Parent = ServerContainer
@@ -370,7 +469,6 @@ serverHopBtn.MouseButton1Click:Connect(function()
     task.spawn(function()
         pcall(function()
             local playerGui = LocalPlayer:WaitForChild("PlayerGui")
-            
             local serverBrowser = playerGui:FindFirstChild("ServerBrowser", true) or playerGui:FindFirstChild("ServerBrowserUI", true)
             
             if not serverBrowser and ReplicatedStorage:FindFirstChild("Remotes") then
@@ -718,11 +816,6 @@ IslandContainer.CanvasSize = UDim2.new(0, 0, 0, totalIslands * 38)
 -- ==========================================
 -- MD GAMER SCRIPT (Part 4 - ESP & Main Engine)
 -- ==========================================
-local function isFruit(obj)
-    if not (obj:IsA("Tool") or string.find(obj.Name, "Fruit")) then return false end
-    return (obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")) ~= nil
-end
-
 local function checkFruitsForNotification(isNewSpawn)
     for _, obj in ipairs(Workspace:GetChildren()) do
         if isFruit(obj) and not notifiedFruits[obj] then
