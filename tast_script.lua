@@ -13,7 +13,7 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
-local autoCollectEnabled = false
+local autoCollectEnabled = true
 local fruitESPEnabled = true
 local playerESPEnabled = true
 local fpsBoostEnabled = false
@@ -203,6 +203,7 @@ local TabMainBtn = createTabBtn("Main / ESP")
 local TabPvpBtn = createTabBtn("PVP ☠️")
 local TabIslandBtn = createTabBtn("ISLAND 🏝️")
 local TabServerBtn = createTabBtn("SERVER 🌐")
+local TabMovementBtn = createTabBtn("MOVEMENT 👨🏻‍💻")
 
 TabMainBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -262,11 +263,26 @@ UIListLayoutServer.Parent = ServerContainer
 UIListLayoutServer.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayoutServer.Padding = UDim.new(0, 6)
 
+local MovementContainer = Instance.new("ScrollingFrame")
+MovementContainer.Size = UDim2.new(1, -120, 1, -45)
+MovementContainer.Position = UDim2.new(0, 115, 0, 40)
+MovementContainer.BackgroundTransparency = 1
+MovementContainer.Visible = false
+MovementContainer.CanvasSize = UDim2.new(0, 0, 0, 160)
+MovementContainer.ScrollBarThickness = 3
+MovementContainer.Parent = MainFrame
+
+local UIListLayoutMovement = Instance.new("UIListLayout")
+UIListLayoutMovement.Parent = MovementContainer
+UIListLayoutMovement.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayoutMovement.Padding = UDim.new(0, 6)
+
 local function resetTabs()
     MainContainer.Visible = false
     PvpContainer.Visible = false
     IslandContainer.Visible = false
     ServerContainer.Visible = false
+    MovementContainer.Visible = false
     TabMainBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 42)
     TabMainBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
     TabPvpBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 42)
@@ -275,6 +291,8 @@ local function resetTabs()
     TabIslandBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
     TabServerBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 42)
     TabServerBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabMovementBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 42)
+    TabMovementBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 end
 
 TabMainBtn.MouseButton1Click:Connect(function()
@@ -303,6 +321,13 @@ TabServerBtn.MouseButton1Click:Connect(function()
     ServerContainer.Visible = true
     TabServerBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
     TabServerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+end)
+
+TabMovementBtn.MouseButton1Click:Connect(function()
+    resetTabs()
+    MovementContainer.Visible = true
+    TabMovementBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    TabMovementBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 end)
 
 local function createToggleRow(parentContainer, name, defaultState, callback)
@@ -350,6 +375,196 @@ local function createToggleRow(parentContainer, name, defaultState, callback)
     end)
 end
 -- ==========================================
+-- FLOATING BUTTONS SETUP (70% Transparent)
+-- ==========================================
+local FloatingHolder = Instance.new("ScreenGui")
+FloatingHolder.Name = "MD_FloatingButtons"
+FloatingHolder.ResetOnSpawn = false
+FloatingHolder.Enabled = false
+
+if gethui then
+    FloatingHolder.Parent = gethui()
+elseif syn and syn.protect_gui then
+    syn.protect_gui(FloatingHolder)
+    FloatingHolder.Parent = CoreGui
+else
+    FloatingHolder.Parent = CoreGui or LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- 1. COLLECT FLOATING BUTTON
+local floatCollectBtn = Instance.new("TextButton")
+floatCollectBtn.Name = "FloatCollect"
+floatCollectBtn.Size = UDim2.new(0, 75, 0, 30)
+floatCollectBtn.Position = UDim2.new(0.02, 0, 0.5, 0)
+floatCollectBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+floatCollectBtn.BackgroundTransparency = 0.7
+floatCollectBtn.Text = "collect"
+floatCollectBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+floatCollectBtn.Font = Enum.Font.GothamBold
+floatCollectBtn.TextSize = 12
+floatCollectBtn.Active = true
+floatCollectBtn.Draggable = true
+floatCollectBtn.Parent = FloatingHolder
+
+local fcCorner = Instance.new("UICorner")
+fcCorner.CornerRadius = UDim.new(0, 6)
+fcCorner.Parent = floatCollectBtn
+
+floatCollectBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if not hrp then return end
+    
+    local found = false
+    local fruitObj = nil
+    
+    for _, obj in pairs(Workspace:GetChildren()) do
+        if obj:IsA("Tool") and (obj.Name:find("Fruit") or obj.Name:find("Fruit ")) then
+            if obj:FindFirstChild("Handle") then
+                fruitObj = obj
+                found = true
+                break
+            end
+        end
+    end
+    
+    if found and fruitObj then
+        local originalPos = hrp.CFrame
+        hrp.CFrame = fruitObj.Handle.CFrame
+        sendNotification("MOVEMENT", "Teleported to fruit! Returning in 3s...")
+        
+        task.wait(3.0)
+        
+        if hrp and hrp.Parent then
+            hrp.CFrame = originalPos
+            sendNotification("MOVEMENT", "Fruit collected & returned back!")
+        end
+    else
+        sendNotification("MOVEMENT", "No fruit found on the floor!")
+    end
+end)
+
+-- 2. SPEED FLOATING BUTTON
+local speedActive = false
+local floatSpeedBtn = Instance.new("TextButton")
+floatSpeedBtn.Name = "FloatSpeed"
+floatSpeedBtn.Size = UDim2.new(0, 75, 0, 30)
+floatSpeedBtn.Position = UDim2.new(0.02, 0, 0.58, 0)
+floatSpeedBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+floatSpeedBtn.BackgroundTransparency = 0.7
+floatSpeedBtn.Text = "speed"
+floatSpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+floatSpeedBtn.Font = Enum.Font.GothamBold
+floatSpeedBtn.TextSize = 12
+floatSpeedBtn.Active = true
+floatSpeedBtn.Draggable = true
+floatSpeedBtn.Parent = FloatingHolder
+
+local fsCorner = Instance.new("UICorner")
+fsCorner.CornerRadius = UDim.new(0, 6)
+fsCorner.Parent = floatSpeedBtn
+
+floatSpeedBtn.MouseButton1Click:Connect(function()
+    speedActive = not speedActive
+    if speedActive then
+        floatSpeedBtn.BackgroundColor3 = Color3.fromRGB(60, 255, 60)
+        task.spawn(function()
+            while speedActive do
+                task.wait(0.01)
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    local hum = char:FindFirstChild("Humanoid")
+                    if hrp and hum and hum.MoveDirection.Magnitude > 0 then
+                        hrp.CFrame = hrp.CFrame + (hum.MoveDirection * 1.8)
+                    end
+                end)
+            end
+        end)
+    else
+        floatSpeedBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    end
+end)
+
+-- ==========================================
+-- MOVEMENT TAB FEATURES
+-- ==========================================
+local tpFruitBtn = Instance.new("TextButton")
+tpFruitBtn.Size = UDim2.new(1, -10, 0, 36)
+tpFruitBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+tpFruitBtn.Text = "1. INSTANT FRUIT COLLECT ⚡"
+tpFruitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+tpFruitBtn.Font = Enum.Font.GothamBold
+tpFruitBtn.TextSize = 11
+tpFruitBtn.Parent = MovementContainer
+
+local tpFruitCorner = Instance.new("UICorner")
+tpFruitCorner.CornerRadius = UDim.new(0, 6)
+tpFruitCorner.Parent = tpFruitBtn
+
+tpFruitBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if not hrp then return end
+    
+    local found = false
+    local fruitObj = nil
+    
+    for _, obj in pairs(Workspace:GetChildren()) do
+        if obj:IsA("Tool") and (obj.Name:find("Fruit") or obj.Name:find("Fruit ")) then
+            if obj:FindFirstChild("Handle") then
+                fruitObj = obj
+                found = true
+                break
+            end
+        end
+    end
+    
+    if found and fruitObj then
+        local originalPos = hrp.CFrame
+        hrp.CFrame = fruitObj.Handle.CFrame
+        sendNotification("MOVEMENT", "Teleported to fruit! Returning in 3s...")
+        
+        task.wait(3.0)
+        
+        if hrp and hrp.Parent then
+            hrp.CFrame = originalPos
+            sendNotification("MOVEMENT", "Fruit collected & returned back!")
+        end
+    else
+        sendNotification("MOVEMENT", "No fruit found on the floor!")
+    end
+end)
+
+createToggleRow(MovementContainer, "2. SMOOTH SPEED 🏃🏻‍♂️", false, function(enabled)
+    speedActive = enabled
+    if speedActive then
+        floatSpeedBtn.BackgroundColor3 = Color3.fromRGB(60, 255, 60)
+        task.spawn(function()
+            while speedActive do
+                task.wait(0.01)
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    local hum = char:FindFirstChild("Humanoid")
+                    if hrp and hum and hum.MoveDirection.Magnitude > 0 then
+                        hrp.CFrame = hrp.CFrame + (hum.MoveDirection * 1.8)
+                    end
+                end)
+            end
+        end)
+    else
+        floatSpeedBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    end
+end)
+
+createToggleRow(MovementContainer, "Show Mobile Buttons 📱", false, function(enabled)
+    FloatingHolder.Enabled = enabled
+    sendNotification("MOVEMENT", enabled and "Mobile floating buttons shown!" or "Mobile floating buttons hidden!")
+end)
+-- ==========================================
 -- MD GAMER SCRIPT (Part 2 - Server Hop & PVP Logic)
 -- ==========================================
 local serverHopBtn = Instance.new("TextButton")
@@ -370,7 +585,6 @@ serverHopBtn.MouseButton1Click:Connect(function()
     task.spawn(function()
         pcall(function()
             local playerGui = LocalPlayer:WaitForChild("PlayerGui")
-            
             local serverBrowser = playerGui:FindFirstChild("ServerBrowser", true) or playerGui:FindFirstChild("ServerBrowserUI", true)
             
             if not serverBrowser and ReplicatedStorage:FindFirstChild("Remotes") then
@@ -715,6 +929,7 @@ for islandName, pos in pairs(currentSeaIslands) do
 end
 
 IslandContainer.CanvasSize = UDim2.new(0, 0, 0, totalIslands * 38)
+
 -- ==========================================
 -- MD GAMER SCRIPT (Part 4 - ESP & Main Engine)
 -- ==========================================
