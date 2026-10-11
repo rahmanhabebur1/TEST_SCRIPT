@@ -1,4 +1,4 @@
--- MD GAMER SCRIPT (Part 1 - UI & Core Services)
+-- MD GAMER SCRIPT (Part 1 - UI & Core Setup)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -12,8 +12,8 @@ local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
 local autoCollectEnabled = false
-local fruitESPEnabled = false
-local playerESPEnabled = false
+local fruitESPEnabled = true
+local playerESPEnabled = true
 local fpsBoostEnabled = false
 
 -- PVP Options
@@ -347,7 +347,7 @@ local function createToggleRow(parentContainer, name, defaultState, callback)
         callback(state)
     end)
 end
--- MD GAMER SCRIPT (Part 2 - Server Tab & Smart Filter Logic)
+-- MD GAMER SCRIPT (Part 2 - Pro Hop Module Logic)
 local serverHopBtn = Instance.new("TextButton")
 serverHopBtn.Size = UDim2.new(1, -10, 0, 34)
 serverHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
@@ -361,47 +361,72 @@ local serverHopCorner = Instance.new("UICorner")
 serverHopCorner.CornerRadius = UDim.new(0, 6)
 serverHopCorner.Parent = serverHopBtn
 
+-- প্রো থার্ড-পার্টি অননার্ড হপ মডিউল (Error 773 Bypass Engine)
 serverHopBtn.MouseButton1Click:Connect(function()
-    sendNotification("🌐 Server Hop", "Filtering best available servers...")
+    sendNotification("🌐 Server Hop", "Searching best server via Pro Engine...")
     task.spawn(function()
-        local currentPlaceId = game.PlaceId
-        local currentJobId = game.JobId
-        local targetServer = nil
+        local placeId = game.PlaceId
+        local jobId = game.JobId
+        local foundServer = nil
 
-        local success, result = pcall(function()
-            local rawData = game:HttpGet("https://games.roblox.com/v1/games/" .. tostring(currentPlaceId) .. "/servers/Public?sortOrder=Asc&limit=100")
-            return HttpService:JSONDecode(rawData)
-        end)
-
-        if success and result and result.data then
-            local validServers = {}
-            for _, s in ipairs(result.data) do
-                if type(s) == "table" and s.id and s.playing and s.maxPlayers then
-                    if s.id ~= currentJobId and s.playing < s.maxPlayers and not s.isPrivate then
-                        table.insert(validServers, s)
-                    end
-                end
+        local function fetchServers(cursor)
+            local url = "https://games.roproxy.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
+            if cursor then
+                url = url .. "&cursor=" .. cursor
             end
-
-            table.sort(validServers, function(a, b)
-                return a.playing < b.playing
+            local success, raw = pcall(function()
+                return game:HttpGet(url)
             end)
-
-            if #validServers > 0 then
-                targetServer = validServers[1].id
+            if success and raw then
+                return HttpService:JSONDecode(raw)
             end
+            return nil
         end
 
-        if targetServer then
-            sendNotification("🌐 Connecting...", "Joining filtered low-player server...")
-            local tpSuccess, tpErr = pcall(function()
-                TeleportService:TeleportToPlaceInstance(currentPlaceId, targetServer, LocalPlayer)
+        local cursor = nil
+        local validList = {}
+
+        for attempt = 1, 3 do
+            local result = fetchServers(cursor)
+            if result and result.data then
+                for _, s in ipairs(result.data) do
+                    if type(s) == "table" and s.id and s.playing and s.maxPlayers then
+                        if s.id ~= jobId and s.playing < s.maxPlayers and s.playing > 1 then
+                            table.insert(validList, s)
+                        end
+                    end
+                end
+                if #validList >= 10 or not result.nextPageCursor then
+                    break
+                else
+                    cursor = result.nextPageCursor
+                end
+            end
+            task.wait(0.2)
+        end
+
+        if #validList > 0 then
+            table.sort(validList, function(a, b) return a.playing < b.playing end)
+            foundServer = validList[math.random(1, math.min(3, #validList))].id
+        end
+
+        if foundServer then
+            sendNotification("🌐 Teleporting...", "Connecting safely...")
+            local tpSuccess = pcall(function()
+                TeleportService:TeleportToPlaceInstance(placeId, foundServer, LocalPlayer)
             end)
+
             if not tpSuccess then
-                sendNotification("⚠️ Teleport Failed", "Retrying next server...")
+                sendNotification("⚠️ Teleport Retry", "Trying secondary channel...")
+                pcall(function()
+                    TeleportService:Teleport(placeId, LocalPlayer)
+                end)
             end
         else
-            sendNotification("⚠️ Server Hop", "No valid server found, try again!")
+            sendNotification("⚠️ Server Hop", "Retrying random server...")
+            pcall(function()
+                TeleportService:Teleport(placeId, LocalPlayer)
+            end)
         end
     end)
 end)
@@ -448,7 +473,6 @@ copyJobBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- PVP Tab Toggles
 createToggleRow(PvpContainer, "Aimbot Nearest", false, function(enabled)
     aimbotNearestEnabled = enabled
     if enabled then sendNotification("🎯 Aimbot", "Activated!") end
@@ -467,7 +491,6 @@ createToggleRow(PvpContainer, "Kill Aura (No Anim)", false, function(enabled)
     if enabled then sendNotification("⚡ Kill Aura", "Active (50m Range)") end
 end)
 
--- Kill Aura Loop (M1 Attack Only, No Animation, 50m Range)
 task.spawn(function()
     while task.wait(0.1) do
         if killAuraEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
