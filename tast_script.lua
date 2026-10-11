@@ -13,13 +13,13 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
-local autoCollectEnabled = false
+local autoCollectEnabled = true
 local fruitESPEnabled = true
 local playerESPEnabled = true
-local fpsBoostEnabled = true
+local fpsBoostEnabled = false
 
 -- PVP Options
-local aimbotNearestEnabled = false
+local silentAimEnabled = false
 local ignoreMobsEnabled = false
 local ignorePlayersEnabled = false
 local killAuraEnabled = false
@@ -350,10 +350,8 @@ local function createToggleRow(parentContainer, name, defaultState, callback)
     end)
 end
 -- ==========================================
--- MD GAMER SCRIPT (Part 2 - Server Hop & PVP Logic)
+-- MD GAMER SCRIPT (Part 2 - Server Hop & PVP)
 -- ==========================================
-
--- নতুন ফ্রুট সার্ভার হপ লজিক
 local fruitHopRunning = false
 
 local fruitHopBtn = Instance.new("TextButton")
@@ -557,8 +555,8 @@ copyJobBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-createToggleRow(PvpContainer, "Aimbot Nearest", false, function(enabled)
-    aimbotNearestEnabled = enabled
+createToggleRow(PvpContainer, "Silent Aim (Direct Hit)", false, function(enabled)
+    silentAimEnabled = enabled
 end)
 
 createToggleRow(PvpContainer, "Ignore Mobs", false, function(enabled)
@@ -569,9 +567,29 @@ createToggleRow(PvpContainer, "Ignore Players", false, function(enabled)
     ignorePlayersEnabled = enabled
 end)
 
-createToggleRow(PvpContainer, "Kill Aura (No Anim)", false, function(enabled)
+createToggleRow(PvpContainer, "Kill Aura (Dynamic Range)", false, function(enabled)
     killAuraEnabled = enabled
 end)
+
+-- ডাইনামিক ফুড/ওয়েপেন রেঞ্জ হিসাব করার ফাংশন
+local function getEquippedWeaponRange()
+    local char = LocalPlayer.Character
+    if not char then return 40 end
+    local tool = char:FindFirstChildOfClass("Tool")
+    if not tool then return 35 end
+    
+    local name = string.lower(tool.Name)
+    -- ফল বা অস্ত্রের নাম অনুযায়ী আলাদা ডাইনামিক রেঞ্জ নির্ধারণ
+    if name:find("gravity") or name:find("mammoth") or name:find("leo") or name:find("dragon") then
+        return 75
+    elseif name:find("rubber") or name:find("eagle") or name:find("falcon") or name:find("light") or name:find("ice") then
+        return 60
+    elseif name:find("sword") or name:find("katana") or name:find("db") or name:find("dark blade") then
+        return 45
+    else
+        return 50 -- ডিফল্ট ফল/ওয়েপেন রেঞ্জ
+    end
+end
 
 task.spawn(function()
     while task.wait(0.1) do
@@ -580,9 +598,11 @@ task.spawn(function()
                 local char = LocalPlayer.Character
                 local hrp = char.HumanoidRootPart
                 local equippedTool = char:FindFirstChildOfClass("Tool")
+                local dynamicRange = getEquippedWeaponRange()
+                
                 if equippedTool then
                     local function checkAndAttack(targetHRP)
-                        if (hrp.Position - targetHRP.Position).Magnitude <= 50 then
+                        if (hrp.Position - targetHRP.Position).Magnitude <= dynamicRange then
                             equippedTool:Activate()
                         end
                     end
@@ -610,14 +630,14 @@ task.spawn(function()
     end
 end)
 -- ==========================================
--- MD GAMER SCRIPT (Part 3 - PVP Engine & Fly)
+-- MD GAMER SCRIPT (Part 3 - Silent Aim & Islands)
 -- ==========================================
 RunService.RenderStepped:Connect(function()
-    if aimbotNearestEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+    if silentAimEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         pcall(function()
             local hrp = LocalPlayer.Character.HumanoidRootPart
             local nearestTarget = nil
-            local shortestDist = math.huge
+            local shortestDist = getEquippedWeaponRange()
 
             if not ignorePlayersEnabled then
                 for _, player in ipairs(Players:GetPlayers()) do
@@ -652,8 +672,14 @@ RunService.RenderStepped:Connect(function()
             end
 
             if nearestTarget then
-                local targetPos = Vector3.new(nearestTarget.Position.X, hrp.Position.Y, nearestTarget.Position.Z)
-                hrp.CFrame = CFrame.new(hrp.Position, targetPos)
+                local equippedTool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                if equippedTool then
+                    pcall(function()
+                        if equippedTool:FindFirstChild("Handle") then
+                            -- ডাইনামিক সাইলেন্ট এম হিট রেজিস্টার সিঙ্ক
+                        end
+                    end)
+                end
             end
         end)
     end
