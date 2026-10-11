@@ -16,7 +16,7 @@ local LocalPlayer = Players.LocalPlayer
 local autoCollectEnabled = true
 local fruitESPEnabled = true
 local playerESPEnabled = true
-local fpsBoostEnabled = false
+local fpsBoostEnabled = true
 
 -- PVP Options
 local aimbotNearestEnabled = false
