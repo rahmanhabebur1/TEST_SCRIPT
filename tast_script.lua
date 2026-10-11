@@ -350,12 +350,12 @@ local function createToggleRow(parentContainer, name, defaultState, callback)
     end)
 end
 -- ==========================================
--- MD GAMER SCRIPT (Part 2 - Server Hop & PVP Logic)
+-- MD GAMER SCRIPT (Part 2 - Auto Scrolling & UI Memory Loader Hop)
 -- ==========================================
 local serverHopBtn = Instance.new("TextButton")
 serverHopBtn.Size = UDim2.new(1, -10, 0, 34)
 serverHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-serverHopBtn.Text = "🌐 Browser Top-Right Server Hop"
+serverHopBtn.Text = "🌐 Auto-Load & In-Game Server Hop"
 serverHopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 serverHopBtn.Font = Enum.Font.GothamBold
 serverHopBtn.TextSize = 11
@@ -366,22 +366,36 @@ serverHopCorner.CornerRadius = UDim.new(0, 6)
 serverHopCorner.Parent = serverHopBtn
 
 serverHopBtn.MouseButton1Click:Connect(function()
-    sendNotification("🌐 Server Hop", "Scanning top-right server browser...")
+    sendNotification("🌐 Auto Hop", "Loading Server List Data...")
     task.spawn(function()
         pcall(function()
             local playerGui = LocalPlayer:WaitForChild("PlayerGui")
             
+            -- ১. ইউআই এবং রিমোট ওপেন করানো
             local serverBrowser = playerGui:FindFirstChild("ServerBrowser", true) or playerGui:FindFirstChild("ServerBrowserUI", true)
             
             if not serverBrowser and ReplicatedStorage:FindFirstChild("Remotes") then
                 pcall(function()
                     ReplicatedStorage.Remotes.CommF_:InvokeServer("ServerBrowser")
                 end)
-                task.wait(0.6)
+                task.wait(0.8)
                 serverBrowser = playerGui:FindFirstChild("ServerBrowser", true) or playerGui:FindFirstChild("ServerBrowserUI", true)
             end
 
             if serverBrowser then
+                -- ইউআই ভিজিবল করা যদি হাইড থাকে
+                serverBrowser.Visible = true
+                
+                -- ২. মেমোরি লোড করার জন্য অটো স্ক্রোলিং ট্রিগার
+                local scrollFrame = serverBrowser:FindFirstChildOfClass("ScrollingFrame") or serverBrowser:FindFirstChild("List", true)
+                if scrollFrame then
+                    scrollFrame.CanvasPosition = Vector2.new(0, 500) -- জোরপূর্বক নিচে স্ক্রোল করানো
+                    task.wait(0.3)
+                    scrollFrame.CanvasPosition = Vector2.new(0, 0) -- আবার ওপরে নেওয়া
+                    task.wait(0.3)
+                end
+
+                -- ৩. অটো রিফ্রেশ ক্লিক
                 local refreshBtn = serverBrowser:FindFirstChild("Refresh", true)
                 if refreshBtn then
                     if firesignal then
@@ -389,9 +403,10 @@ serverHopBtn.MouseButton1Click:Connect(function()
                     elseif getconnections then
                         for _, conn in ipairs(getconnections(refreshBtn.MouseButton1Click)) do conn:Fire() end
                     end
-                    task.wait(0.8)
+                    task.wait(1)
                 end
                 
+                -- ৪. স্ক্যানিং এবং অটো জয়েন
                 local bestJoinBtn = nil
                 for _, obj in ipairs(serverBrowser:GetDescendants()) do
                     if obj:IsA("TextButton") or obj:IsA("ImageButton") then
@@ -403,7 +418,7 @@ serverHopBtn.MouseButton1Click:Connect(function()
                 end
                 
                 if bestJoinBtn then
-                    sendNotification("🌐 Connecting...", "Joining best browser server...")
+                    sendNotification("🌐 Connecting...", "Joining auto-loaded server...")
                     if firesignal then
                         firesignal(bestJoinBtn.MouseButton1Click)
                     elseif getconnections then
@@ -413,7 +428,7 @@ serverHopBtn.MouseButton1Click:Connect(function()
                 end
             end
             
-            sendNotification("⚠️ Notice", "Executing safe fallback hop...")
+            sendNotification("⚠️ Notice", "Executing safe direct hop...")
             TeleportService:Teleport(game.PlaceId, LocalPlayer)
         end)
     end)
