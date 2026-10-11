@@ -481,7 +481,7 @@ createToggleRow(PvpContainer, "Kill Aura (No Anim)", false, function(enabled)
 end)
 
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(0.5) do
         if killAuraEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             pcall(function()
                 local char = LocalPlayer.Character
