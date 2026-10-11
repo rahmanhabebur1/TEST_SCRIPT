@@ -1,4 +1,4 @@
--- MD GAMER SCRIPT (Part 1 - UI & Core Setup)
+-- MD GAMER SCRIPT (Part 1 - UI & Core Services)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -347,7 +347,7 @@ local function createToggleRow(parentContainer, name, defaultState, callback)
         callback(state)
     end)
 end
--- MD GAMER SCRIPT (Part 2 - Features & Logic)
+-- MD GAMER SCRIPT (Part 2 - Server Tab & Smart Filter Logic)
 local serverHopBtn = Instance.new("TextButton")
 serverHopBtn.Size = UDim2.new(1, -10, 0, 34)
 serverHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
@@ -362,28 +362,47 @@ serverHopCorner.CornerRadius = UDim.new(0, 6)
 serverHopCorner.Parent = serverHopBtn
 
 serverHopBtn.MouseButton1Click:Connect(function()
-    sendNotification("🌐 Server Hop", "Searching for best available server...")
-    pcall(function()
-        local function serverHop()
-            local site
-            local success, err = pcall(function()
-                site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. game.PlaceId .. '/servers/Public?sortOrder=Asc&limit=100'))
-            end)
-            if success and site and site.data then
-                for _, v in ipairs(site.data) do
-                    local frag = true
-                    if type(v) == "table" and v.maxPlayers and v.playing and v.id then
-                        if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                            sendNotification("🌐 Connecting...", "Joining new server...")
-                            TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id, LocalPlayer)
-                            frag = false
-                            break
-                        end
+    sendNotification("🌐 Server Hop", "Filtering best available servers...")
+    task.spawn(function()
+        local currentPlaceId = game.PlaceId
+        local currentJobId = game.JobId
+        local targetServer = nil
+
+        local success, result = pcall(function()
+            local rawData = game:HttpGet("https://games.roblox.com/v1/games/" .. tostring(currentPlaceId) .. "/servers/Public?sortOrder=Asc&limit=100")
+            return HttpService:JSONDecode(rawData)
+        end)
+
+        if success and result and result.data then
+            local validServers = {}
+            for _, s in ipairs(result.data) do
+                if type(s) == "table" and s.id and s.playing and s.maxPlayers then
+                    if s.id ~= currentJobId and s.playing < s.maxPlayers and not s.isPrivate then
+                        table.insert(validServers, s)
                     end
                 end
             end
+
+            table.sort(validServers, function(a, b)
+                return a.playing < b.playing
+            end)
+
+            if #validServers > 0 then
+                targetServer = validServers[1].id
+            end
         end
-        task.spawn(serverHop)
+
+        if targetServer then
+            sendNotification("🌐 Connecting...", "Joining filtered low-player server...")
+            local tpSuccess, tpErr = pcall(function()
+                TeleportService:TeleportToPlaceInstance(currentPlaceId, targetServer, LocalPlayer)
+            end)
+            if not tpSuccess then
+                sendNotification("⚠️ Teleport Failed", "Retrying next server...")
+            end
+        else
+            sendNotification("⚠️ Server Hop", "No valid server found, try again!")
+        end
     end)
 end)
 
@@ -493,8 +512,7 @@ task.spawn(function()
         end
     end
 end)
-
--- Original Simple Aimbot Engine
+-- MD GAMER SCRIPT (Part 3 - PVP, Fly, Islands & ESP Engines)
 RunService.RenderStepped:Connect(function()
     if aimbotNearestEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         pcall(function()
