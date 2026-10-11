@@ -555,7 +555,7 @@ copyJobBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-createToggleRow(PvpContainer, "Silent Aim (Direct Hit)", false, function(enabled)
+createToggleRow(PvpContainer, "True Target Lock (Silent)", false, function(enabled)
     silentAimEnabled = enabled
 end)
 
@@ -571,23 +571,21 @@ createToggleRow(PvpContainer, "Kill Aura (Dynamic Range)", false, function(enabl
     killAuraEnabled = enabled
 end)
 
--- ডাইনামিক ফুড/ওয়েপেন রেঞ্জ হিসাব করার ফাংশন
 local function getEquippedWeaponRange()
     local char = LocalPlayer.Character
-    if not char then return 40 end
+    if not char then return 50 end
     local tool = char:FindFirstChildOfClass("Tool")
-    if not tool then return 35 end
+    if not tool then return 40 end
     
     local name = string.lower(tool.Name)
-    -- ফল বা অস্ত্রের নাম অনুযায়ী আলাদা ডাইনামিক রেঞ্জ নির্ধারণ
     if name:find("gravity") or name:find("mammoth") or name:find("leo") or name:find("dragon") then
-        return 75
-    elseif name:find("rubber") or name:find("eagle") or name:find("falcon") or name:find("light") or name:find("ice") then
-        return 60
+        return 80
+    elseif name:find("rubber") or name:find("eagle") or name:find("falcon") or name:find("light") or name:find("ice") or name:find("diamond") then
+        return 65
     elseif name:find("sword") or name:find("katana") or name:find("db") or name:find("dark blade") then
         return 45
     else
-        return 50 -- ডিফল্ট ফল/ওয়েপেন রেঞ্জ
+        return 55
     end
 end
 
@@ -630,7 +628,7 @@ task.spawn(function()
     end
 end)
 -- ==========================================
--- MD GAMER SCRIPT (Part 3 - Silent Aim & Islands)
+-- MD GAMER SCRIPT (Part 3 - True Target & Islands)
 -- ==========================================
 RunService.RenderStepped:Connect(function()
     if silentAimEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -676,7 +674,8 @@ RunService.RenderStepped:Connect(function()
                 if equippedTool then
                     pcall(function()
                         if equippedTool:FindFirstChild("Handle") then
-                            -- ডাইনামিক সাইলেন্ট এম হিট রেজিস্টার সিঙ্ক
+                            local direction = (nearestTarget.Position - hrp.Position).Unit
+                            equippedTool.Handle.CFrame = CFrame.new(equippedTool.Handle.Position, equippedTool.Handle.Position + direction)
                         end
                     end)
                 end
