@@ -13,7 +13,7 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
-local autoCollectEnabled = true
+local autoCollectEnabled = false
 local fruitESPEnabled = true
 local playerESPEnabled = true
 local fpsBoostEnabled = false
