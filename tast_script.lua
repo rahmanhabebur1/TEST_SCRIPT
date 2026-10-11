@@ -13,14 +13,13 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
-local autoCollectEnabled = false
+local autoCollectEnabled = true
 local fruitESPEnabled = true
 local playerESPEnabled = true
 local fpsBoostEnabled = false
 
 -- PVP Options
 local aimbotNearestEnabled = false
-local silentAimEnabled = false
 local ignoreMobsEnabled = false
 local ignorePlayersEnabled = false
 local killAuraEnabled = false
@@ -226,7 +225,7 @@ PvpContainer.Size = UDim2.new(1, -120, 1, -45)
 PvpContainer.Position = UDim2.new(0, 115, 0, 40)
 PvpContainer.BackgroundTransparency = 1
 PvpContainer.Visible = false
-PvpContainer.CanvasSize = UDim2.new(0, 0, 0, 260)
+PvpContainer.CanvasSize = UDim2.new(0, 0, 0, 220)
 PvpContainer.ScrollBarThickness = 3
 PvpContainer.Parent = MainFrame
 
@@ -464,10 +463,6 @@ createToggleRow(PvpContainer, "Aimbot Nearest", false, function(enabled)
     aimbotNearestEnabled = enabled
 end)
 
-createToggleRow(PvpContainer, "Silent Aim (Attack Lock)", false, function(enabled)
-    silentAimEnabled = enabled
-end)
-
 createToggleRow(PvpContainer, "Ignore Mobs", false, function(enabled)
     ignoreMobsEnabled = enabled
 end)
@@ -481,7 +476,7 @@ createToggleRow(PvpContainer, "Kill Aura (No Anim)", false, function(enabled)
 end)
 
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(0.1) do
         if killAuraEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             pcall(function()
                 local char = LocalPlayer.Character
@@ -519,73 +514,48 @@ end)
 -- ==========================================
 -- MD GAMER SCRIPT (Part 3 - PVP Engine & Fly)
 -- ==========================================
-local function getClosestCombatTarget()
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-    local hrp = char.HumanoidRootPart
-    
-    local nearestTarget = nil
-    local shortestDist = math.huge
-
-    if not ignorePlayersEnabled then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local pHum = player.Character:FindFirstChildOfClass("Humanoid")
-                if pHum and pHum.Health > 0 then
-                    local dist = (hrp.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                    if dist < shortestDist then
-                        shortestDist = dist
-                        nearestTarget = player.Character.HumanoidRootPart
-                    end
-                end
-            end
-        end
-    end
-
-    if not ignoreMobsEnabled then
-        local enemiesFolder = Workspace:FindFirstChild("Enemies")
-        if enemiesFolder then
-            for _, enemy in ipairs(enemiesFolder:GetChildren()) do
-                local eHRP = enemy:FindFirstChild("HumanoidRootPart")
-                local eHum = enemy:FindFirstChildOfClass("Humanoid")
-                if eHRP and eHum and eHum.Health > 0 then
-                    local dist = (hrp.Position - eHRP.Position).Magnitude
-                    if dist < shortestDist then
-                        shortestDist = dist
-                        nearestTarget = eHRP
-                    end
-                end
-            end
-        end
-    end
-
-    return nearestTarget
-end
-
 RunService.RenderStepped:Connect(function()
     if aimbotNearestEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         pcall(function()
             local hrp = LocalPlayer.Character.HumanoidRootPart
-            local nearestTarget = getClosestCombatTarget()
+            local nearestTarget = nil
+            local shortestDist = math.huge
+
+            if not ignorePlayersEnabled then
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        local pHum = player.Character:FindFirstChildOfClass("Humanoid")
+                        if pHum and pHum.Health > 0 then
+                            local dist = (hrp.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                            if dist < shortestDist then
+                                shortestDist = dist
+                                nearestTarget = player.Character.HumanoidRootPart
+                            end
+                        end
+                    end
+                end
+            end
+
+            if not ignoreMobsEnabled then
+                local enemiesFolder = Workspace:FindFirstChild("Enemies")
+                if enemiesFolder then
+                    for _, enemy in ipairs(enemiesFolder:GetChildren()) do
+                        local eHRP = enemy:FindFirstChild("HumanoidRootPart")
+                        local eHum = enemy:FindFirstChildOfClass("Humanoid")
+                        if eHRP and eHum and eHum.Health > 0 then
+                            local dist = (hrp.Position - eHRP.Position).Magnitude
+                            if dist < shortestDist then
+                                shortestDist = dist
+                                nearestTarget = eHRP
+                            end
+                        end
+                    end
+                end
+            end
+
             if nearestTarget then
                 local targetPos = Vector3.new(nearestTarget.Position.X, hrp.Position.Y, nearestTarget.Position.Z)
                 hrp.CFrame = CFrame.new(hrp.Position, targetPos)
-            end
-        end)
-    end
-
-    if silentAimEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        pcall(function()
-            local char = LocalPlayer.Character
-            local hrp = char.HumanoidRootPart
-            local tool = char:FindFirstChildOfClass("Tool")
-            
-            if tool then
-                local target = getClosestCombatTarget()
-                if target then
-                    local targetPos = Vector3.new(target.Position.X, hrp.Position.Y, target.Position.Z)
-                    hrp.CFrame = CFrame.new(hrp.Position, targetPos)
-                end
             end
         end)
     end
