@@ -667,41 +667,59 @@ createToggleRow(PvpContainer, "Kill Aura (No Anim)", false, function(enabled)
     killAuraEnabled = enabled
 end)
 
--- Updated Kill Aura Loop (Safe & Clean for Joystick/Touch)
+local netFolder = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage:FindFirstChild("Net") or ReplicatedStorage
+
+local function triggerAdvancedAttack(equippedTool, targetPart)
+    pcall(function()
+        equippedTool:Activate()
+
+        local registerAttack = netFolder:FindFirstChild("RegisterAttack") or netFolder:FindFirstChild("CommF_")
+        if registerAttack and registerAttack:IsA("RemoteEvent") then
+            registerAttack:FireServer()
+        end
+
+        local validatorRemote = netFolder:FindFirstChild("Validator") or netFolder:FindFirstChild("Validator2") or ReplicatedStorage:FindFirstChild("Validator", true)
+        if validatorRemote and validatorRemote:IsA("RemoteEvent") then
+            validatorRemote:FireServer(equippedTool.Name, targetPart)
+        end
+    end)
+end
+
 task.spawn(function()
-    while task.wait(0.15) do
+    while task.wait(0.12) do
         if killAuraEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             pcall(function()
                 local char = LocalPlayer.Character
                 local hrp = char.HumanoidRootPart
                 local equippedTool = char:FindFirstChildOfClass("Tool")
+                
                 if equippedTool then
                     local function checkAndAttack(targetHRP)
                         if (hrp.Position - targetHRP.Position).Magnitude <= 50 then
-                            equippedTool:Activate()
-                            pcall(function()
-                                local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Validator")
-                                if not remote then
-                                    remote = ReplicatedStorage:FindFirstChild("Validator2", true)
-                                end
-                            end)
+                            triggerAdvancedAttack(equippedTool, targetHRP)
                         end
                     end
+                    
                     if not ignorePlayersEnabled then
                         for _, player in ipairs(Players:GetPlayers()) do
                             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                                 local pHum = player.Character:FindFirstChildOfClass("Humanoid")
-                                if pHum and pHum.Health > 0 then checkAndAttack(player.Character.HumanoidRootPart) end
+                                if pHum and pHum.Health > 0 then 
+                                    checkAndAttack(player.Character.HumanoidRootPart) 
+                                end
                             end
                         end
                     end
+                    
                     if not ignoreMobsEnabled then
                         local enemiesFolder = Workspace:FindFirstChild("Enemies")
                         if enemiesFolder then
                             for _, enemy in ipairs(enemiesFolder:GetChildren()) do
                                 local eHRP = enemy:FindFirstChild("HumanoidRootPart")
                                 local eHum = enemy:FindFirstChildOfClass("Humanoid")
-                                if eHRP and eHum and eHum.Health > 0 then checkAndAttack(eHRP) end
+                                if eHRP and eHum and eHum.Health > 0 then 
+                                    checkAndAttack(eHRP) 
+                                end
                             end
                         end
                     end
@@ -849,7 +867,7 @@ local function flyTo(targetCFrame)
 end
 
 local seaIslands = {
-    [2753915549] = {
+    [2753915549] = { -- First Sea
         ["Starter Island"] = Vector3.new(1090, 16, 1400),
         ["Jungle"] = Vector3.new(-1240, 12, 380),
         ["Pirate Village"] = Vector3.new(-1120, 4, 3850),
@@ -864,7 +882,7 @@ local seaIslands = {
         ["Underwater City"] = Vector3.new(3860, 5, -1920),
         ["Fountain City"] = Vector3.new(5120, 4, 4100)
     },
-    [4442272183] = {
+    [4442272183] = { -- Second Sea
         ["Cafe"] = Vector3.new(-380, 73, 300),
         ["Kingdom of Rose"] = Vector3.new(-450, 73, 1500),
         ["Ushapp's Island"] = Vector3.new(4800, 8, 2800),
@@ -876,7 +894,7 @@ local seaIslands = {
         ["Ice Castle"] = Vector3.new(5500, 28, -6200),
         ["Forgotten Island"] = Vector3.new(-3050, 235, -10150)
     },
-    [7449423635] = {
+    [7449423635] = { -- Third Sea
         ["Port Town"] = Vector3.new(-2900, 15, 5300),
         ["Great Tree"] = Vector3.new(2250, 25, -7200),
         ["Floating Turtle"] = Vector3.new(-13200, 330, -7600),
@@ -888,32 +906,64 @@ local seaIslands = {
     }
 }
 
-local currentSeaIslands = seaIslands[game.PlaceId] or seaIslands[2753915549]
-local totalIslands = 0
+-- Dynamic Island Loader Function
+local function loadIslandButtons()
+    -- Clear previous island buttons
+    for _, child in ipairs(IslandContainer:GetChildren()) do
+        if not child:IsA("UIListLayout") then
+            child:Destroy()
+        end
+    end
 
-for islandName, pos in pairs(currentSeaIslands) do
-    totalIslands = totalIslands + 1
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -10, 0, 32)
-    btn.BackgroundColor3 = Color3.fromRGB(22, 22, 35)
-    btn.Text = "  📍 " .. islandName
-    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
-    btn.Font = Enum.Font.GothamSemibold
-    btn.TextSize = 11
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    btn.Parent = IslandContainer
+    -- Top Refresh Button
+    local refreshBtn = Instance.new("TextButton")
+    refreshBtn.Size = UDim2.new(1, -10, 0, 34)
+    refreshBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    refreshBtn.Text = "🔄 REFRESH ISLANDS MAP"
+    refreshBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    refreshBtn.Font = Enum.Font.GothamBold
+    refreshBtn.TextSize = 11
+    refreshBtn.Parent = IslandContainer
 
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
-    btnCorner.Parent = btn
+    local refreshCorner = Instance.new("UICorner")
+    refreshCorner.CornerRadius = UDim.new(0, 6)
+    refreshCorner.Parent = refreshBtn
 
-    btn.MouseButton1Click:Connect(function()
-        sendNotification("🏝️ Flying...", islandName)
-        flyTo(CFrame.new(pos))
+    refreshBtn.MouseButton1Click:Connect(function()
+        loadIslandButtons()
+        sendNotification("🏝️ Map Refreshed", "Loaded islands for current Sea!")
     end)
+
+    local currentSeaIslands = seaIslands[game.PlaceId] or seaIslands[2753915549]
+    local totalIslands = 1
+
+    for islandName, pos in pairs(currentSeaIslands) do
+        totalIslands = totalIslands + 1
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, -10, 0, 32)
+        btn.BackgroundColor3 = Color3.fromRGB(22, 22, 35)
+        btn.Text = "  📍 " .. islandName
+        btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+        btn.Font = Enum.Font.GothamSemibold
+        btn.TextSize = 11
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.Parent = IslandContainer
+
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 6)
+        btnCorner.Parent = btn
+
+        btn.MouseButton1Click:Connect(function()
+            sendNotification("🏝️ Flying...", islandName)
+            flyTo(CFrame.new(pos))
+        end)
+    end
+
+    IslandContainer.CanvasSize = UDim2.new(0, 0, 0, totalIslands * 38)
 end
 
-IslandContainer.CanvasSize = UDim2.new(0, 0, 0, totalIslands * 38)
+-- Initial Load
+loadIslandButtons()
 
 -- ==========================================
 -- MD GAMER SCRIPT (Part 4 - ESP & Main Engine)
