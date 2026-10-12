@@ -380,7 +380,7 @@ local function isFruit(obj)
     return (obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")) ~= nil
 end
 -- ==========================================
--- FLOATING BUTTONS SETUP (70% Transparent)
+-- FLOATING BUTTONS & HOTKEYS SETUP
 -- ==========================================
 local FloatingHolder = Instance.new("ScreenGui")
 FloatingHolder.Name = "MD_FloatingButtons"
@@ -395,6 +395,9 @@ elseif syn and syn.protect_gui then
 else
     FloatingHolder.Parent = CoreGui or LocalPlayer:WaitForChild("PlayerGui")
 end
+
+local speedActive = false
+local floatSpeedBtn, floatCollectBtn
 
 local function instantCollectAction()
     local char = LocalPlayer.Character
@@ -434,8 +437,43 @@ local function instantCollectAction()
     end
 end
 
+local function toggleSpeedAction()
+    speedActive = not speedActive
+    if speedActive then
+        if floatSpeedBtn then floatSpeedBtn.BackgroundColor3 = Color3.fromRGB(60, 255, 60) end
+        sendNotification("MOVEMENT", "Smooth Speed: ON")
+        task.spawn(function()
+            while speedActive do
+                task.wait(0.01)
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    local hum = char:FindFirstChild("Humanoid")
+                    if hrp and hum and hum.MoveDirection.Magnitude > 0 then
+                        hrp.CFrame = hrp.CFrame + (hum.MoveDirection * 1.8)
+                    end
+                end)
+            end
+        end)
+    else
+        if floatSpeedBtn then floatSpeedBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60) end
+        sendNotification("MOVEMENT", "Smooth Speed: OFF")
+    end
+end
+
+-- Keyboard Hotkeys Control (+ for Collect, - for Speed)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed then
+        if input.KeyCode == Enum.KeyCode.Equals or input.KeyCode == Enum.KeyCode.KeypadPlus then
+            instantCollectAction()
+        elseif input.KeyCode == Enum.KeyCode.Minus or input.KeyCode == Enum.KeyCode.KeypadMinus then
+            toggleSpeedAction()
+        end
+    end
+end)
+
 -- 1. COLLECT FLOATING BUTTON
-local floatCollectBtn = Instance.new("TextButton")
+floatCollectBtn = Instance.new("TextButton")
 floatCollectBtn.Name = "FloatCollect"
 floatCollectBtn.Size = UDim2.new(0, 75, 0, 30)
 floatCollectBtn.Position = UDim2.new(0.02, 0, 0.5, 0)
@@ -456,8 +494,7 @@ fcCorner.Parent = floatCollectBtn
 floatCollectBtn.MouseButton1Click:Connect(instantCollectAction)
 
 -- 2. SPEED FLOATING BUTTON
-local speedActive = false
-local floatSpeedBtn = Instance.new("TextButton")
+floatSpeedBtn = Instance.new("TextButton")
 floatSpeedBtn.Name = "FloatSpeed"
 floatSpeedBtn.Size = UDim2.new(0, 75, 0, 30)
 floatSpeedBtn.Position = UDim2.new(0.02, 0, 0.58, 0)
@@ -475,27 +512,7 @@ local fsCorner = Instance.new("UICorner")
 fsCorner.CornerRadius = UDim.new(0, 6)
 fsCorner.Parent = floatSpeedBtn
 
-floatSpeedBtn.MouseButton1Click:Connect(function()
-    speedActive = not speedActive
-    if speedActive then
-        floatSpeedBtn.BackgroundColor3 = Color3.fromRGB(60, 255, 60)
-        task.spawn(function()
-            while speedActive do
-                task.wait(0.01)
-                pcall(function()
-                    local char = LocalPlayer.Character
-                    local hrp = char:FindFirstChild("HumanoidRootPart")
-                    local hum = char:FindFirstChild("Humanoid")
-                    if hrp and hum and hum.MoveDirection.Magnitude > 0 then
-                        hrp.CFrame = hrp.CFrame + (hum.MoveDirection * 1.8)
-                    end
-                end)
-            end
-        end)
-    else
-        floatSpeedBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    end
-end)
+floatSpeedBtn.MouseButton1Click:Connect(toggleSpeedAction)
 
 -- ==========================================
 -- MOVEMENT TAB FEATURES
@@ -516,24 +533,8 @@ tpFruitCorner.Parent = tpFruitBtn
 tpFruitBtn.MouseButton1Click:Connect(instantCollectAction)
 
 createToggleRow(MovementContainer, "2. SMOOTH SPEED 🏃🏻‍♂️", false, function(enabled)
-    speedActive = enabled
-    if speedActive then
-        floatSpeedBtn.BackgroundColor3 = Color3.fromRGB(60, 255, 60)
-        task.spawn(function()
-            while speedActive do
-                task.wait(0.01)
-                pcall(function()
-                    local char = LocalPlayer.Character
-                    local hrp = char:FindFirstChild("HumanoidRootPart")
-                    local hum = char:FindFirstChild("Humanoid")
-                    if hrp and hum and hum.MoveDirection.Magnitude > 0 then
-                        hrp.CFrame = hrp.CFrame + (hum.MoveDirection * 1.8)
-                    end
-                end)
-            end
-        end)
-    else
-        floatSpeedBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    if speedActive ~= enabled then
+        toggleSpeedAction()
     end
 end)
 
@@ -666,8 +667,9 @@ createToggleRow(PvpContainer, "Kill Aura (No Anim)", false, function(enabled)
     killAuraEnabled = enabled
 end)
 
+-- Updated Kill Aura Loop (Safe & Clean for Joystick/Touch)
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(0.15) do
         if killAuraEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             pcall(function()
                 local char = LocalPlayer.Character
@@ -677,6 +679,12 @@ task.spawn(function()
                     local function checkAndAttack(targetHRP)
                         if (hrp.Position - targetHRP.Position).Magnitude <= 50 then
                             equippedTool:Activate()
+                            pcall(function()
+                                local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Validator")
+                                if not remote then
+                                    remote = ReplicatedStorage:FindFirstChild("Validator2", true)
+                                end
+                            end)
                         end
                     end
                     if not ignorePlayersEnabled then
