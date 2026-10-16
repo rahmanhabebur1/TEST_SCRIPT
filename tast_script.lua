@@ -1,5 +1,5 @@
 -- ==========================================
--- MD GAMER SCRIPT (Part 1 - Services & UI)
+-- MD GAMER SCRIPT (Part 1/4)
 -- ==========================================
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -14,11 +14,12 @@ local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
 local autoCollectEnabled = false
+local autoCollectChestEnabled = false
+local islandESPEnabled = false
 local fruitESPEnabled = true
 local playerESPEnabled = true
 local fpsBoostEnabled = false
 
--- PVP Options
 local aimbotNearestEnabled = false
 local ignoreMobsEnabled = false
 local ignorePlayersEnabled = false
@@ -26,6 +27,7 @@ local killAuraEnabled = false
 
 local fruitESPObjects = {}
 local playerESPObjects = {}
+local islandESPObjects = {}
 local notifiedFruits = {}
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -101,7 +103,9 @@ local function sendNotification(title, text)
         notifFrame:Destroy()
     end)
 end
-
+-- ==========================================
+-- MD GAMER SCRIPT (Part 2/4)
+-- ==========================================
 local ToggleButton = Instance.new("ImageButton")
 ToggleButton.Name = "OpenButton"
 ToggleButton.Size = UDim2.new(0, 45, 0, 45)
@@ -137,6 +141,14 @@ MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed then
+        if input.KeyCode == Enum.KeyCode.U then
+            MainFrame.Visible = not MainFrame.Visible
+        end
+    end
+end)
+
 local UICornerMain = Instance.new("UICorner")
 UICornerMain.CornerRadius = UDim.new(0, 10)
 UICornerMain.Parent = MainFrame
@@ -171,7 +183,7 @@ local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 110, 1, -35)
 Sidebar.Position = UDim2.new(0, 0, 0, 35)
 Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
-Sidebar.Parent = MainFrame
+Sidebar.Parent = Sidebar or MainFrame
 
 local UIListLayoutSidebar = Instance.new("UIListLayout")
 UIListLayoutSidebar.Parent = Sidebar
@@ -205,6 +217,19 @@ local TabIslandBtn = createTabBtn("ISLAND 🏝️")
 local TabServerBtn = createTabBtn("SERVER 🌐")
 local TabMovementBtn = createTabBtn("MOVEMENT 👨🏻‍💻")
 
+local TabExitBtn = Instance.new("TextButton")
+TabExitBtn.Size = UDim2.new(0, 100, 0, 32)
+TabExitBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+TabExitBtn.Text = "EXIT SCRIPT ❌"
+TabExitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TabExitBtn.Font = Enum.Font.GothamBold
+TabExitBtn.TextSize = 10
+TabExitBtn.Parent = Sidebar
+
+local exitCorner = Instance.new("UICorner")
+exitCorner.CornerRadius = UDim.new(0, 6)
+exitCorner.Parent = TabExitBtn
+
 TabMainBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
@@ -212,7 +237,7 @@ local MainContainer = Instance.new("ScrollingFrame")
 MainContainer.Size = UDim2.new(1, -120, 1, -45)
 MainContainer.Position = UDim2.new(0, 115, 0, 40)
 MainContainer.BackgroundTransparency = 1
-MainContainer.CanvasSize = UDim2.new(0, 0, 0, 200)
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, 260)
 MainContainer.ScrollBarThickness = 3
 MainContainer.Parent = MainFrame
 
@@ -295,41 +320,14 @@ local function resetTabs()
     TabMovementBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 end
 
-TabMainBtn.MouseButton1Click:Connect(function()
-    resetTabs()
-    MainContainer.Visible = true
-    TabMainBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-    TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-end)
-
-TabPvpBtn.MouseButton1Click:Connect(function()
-    resetTabs()
-    PvpContainer.Visible = true
-    TabPvpBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-    TabPvpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-end)
-
-TabIslandBtn.MouseButton1Click:Connect(function()
-    resetTabs()
-    IslandContainer.Visible = true
-    TabIslandBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-    TabIslandBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-end)
-
-TabServerBtn.MouseButton1Click:Connect(function()
-    resetTabs()
-    ServerContainer.Visible = true
-    TabServerBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-    TabServerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-end)
-
-TabMovementBtn.MouseButton1Click:Connect(function()
-    resetTabs()
-    MovementContainer.Visible = true
-    TabMovementBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-    TabMovementBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-end)
-
+TabMainBtn.MouseButton1Click:Connect(function() resetTabs(); MainContainer.Visible = true; TabMainBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255); TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255) end)
+TabPvpBtn.MouseButton1Click:Connect(function() resetTabs(); PvpContainer.Visible = true; TabPvpBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255); TabPvpBtn.TextColor3 = Color3.fromRGB(255, 255, 255) end)
+TabIslandBtn.MouseButton1Click:Connect(function() resetTabs(); IslandContainer.Visible = true; TabIslandBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255); TabIslandBtn.TextColor3 = Color3.fromRGB(255, 255, 255) end)
+TabServerBtn.MouseButton1Click:Connect(function() resetTabs(); ServerContainer.Visible = true; TabServerBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255); TabServerBtn.TextColor3 = Color3.fromRGB(255, 255, 255) end)
+TabMovementBtn.MouseButton1Click:Connect(function() resetTabs(); MovementContainer.Visible = true; TabMovementBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255); TabMovementBtn.TextColor3 = Color3.fromRGB(255, 255, 255) end)
+-- ==========================================
+-- MD GAMER SCRIPT (Part 3/4)
+-- ==========================================
 local function createToggleRow(parentContainer, name, defaultState, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -10, 0, 36)
@@ -379,9 +377,17 @@ local function isFruit(obj)
     if not (obj:IsA("Tool") or string.find(obj.Name, "Fruit")) then return false end
     return (obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")) ~= nil
 end
--- ==========================================
--- FLOATING BUTTONS & HOTKEYS SETUP
--- ==========================================
+
+local function isChest(obj)
+    if obj:IsA("Model") or obj:IsA("BasePart") then
+        local name = string.lower(obj.Name)
+        if name:find("chest") or name:find("bluechest") or name:find("goldenchest") or name:find("silverchest") then
+            return (obj:FindFirstChild("RootPart") or obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")) ~= nil
+        end
+    end
+    return false
+end
+
 local FloatingHolder = Instance.new("ScreenGui")
 FloatingHolder.Name = "MD_FloatingButtons"
 FloatingHolder.ResetOnSpawn = false
@@ -402,7 +408,6 @@ local floatSpeedBtn, floatCollectBtn
 local function instantCollectAction()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    
     if not hrp then return end
     
     local found = false
@@ -424,16 +429,13 @@ local function instantCollectAction()
     if found and fruitHandle then
         local originalPos = hrp.CFrame
         hrp.CFrame = fruitHandle.CFrame
-        sendNotification("MOVEMENT", "Teleported to " .. fruitName .. "! Returning in 3s...")
-        
+        sendNotification("MOVEMENT", "Teleported to " .. fruitName .. "!")
         task.wait(3.0)
-        
         if hrp and hrp.Parent then
             hrp.CFrame = originalPos
-            sendNotification("MOVEMENT", "Fruit collected & returned back!")
         end
     else
-        sendNotification("MOVEMENT", "No natural or dropped fruit found!")
+        sendNotification("MOVEMENT", "No fruit found!")
     end
 end
 
@@ -461,7 +463,6 @@ local function toggleSpeedAction()
     end
 end
 
--- Keyboard Hotkeys Control (+ for Collect, - for Speed)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed then
         if input.KeyCode == Enum.KeyCode.Equals or input.KeyCode == Enum.KeyCode.KeypadPlus then
@@ -472,7 +473,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- 1. COLLECT FLOATING BUTTON
 floatCollectBtn = Instance.new("TextButton")
 floatCollectBtn.Name = "FloatCollect"
 floatCollectBtn.Size = UDim2.new(0, 75, 0, 30)
@@ -490,10 +490,8 @@ floatCollectBtn.Parent = FloatingHolder
 local fcCorner = Instance.new("UICorner")
 fcCorner.CornerRadius = UDim.new(0, 6)
 fcCorner.Parent = floatCollectBtn
-
 floatCollectBtn.MouseButton1Click:Connect(instantCollectAction)
 
--- 2. SPEED FLOATING BUTTON
 floatSpeedBtn = Instance.new("TextButton")
 floatSpeedBtn.Name = "FloatSpeed"
 floatSpeedBtn.Size = UDim2.new(0, 75, 0, 30)
@@ -511,12 +509,8 @@ floatSpeedBtn.Parent = FloatingHolder
 local fsCorner = Instance.new("UICorner")
 fsCorner.CornerRadius = UDim.new(0, 6)
 fsCorner.Parent = floatSpeedBtn
-
 floatSpeedBtn.MouseButton1Click:Connect(toggleSpeedAction)
 
--- ==========================================
--- MOVEMENT TAB FEATURES
--- ==========================================
 local tpFruitBtn = Instance.new("TextButton")
 tpFruitBtn.Size = UDim2.new(1, -10, 0, 36)
 tpFruitBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
@@ -529,22 +523,16 @@ tpFruitBtn.Parent = MovementContainer
 local tpFruitCorner = Instance.new("UICorner")
 tpFruitCorner.CornerRadius = UDim.new(0, 6)
 tpFruitCorner.Parent = tpFruitBtn
-
 tpFruitBtn.MouseButton1Click:Connect(instantCollectAction)
 
 createToggleRow(MovementContainer, "2. SMOOTH SPEED 🏃🏻‍♂️", false, function(enabled)
-    if speedActive ~= enabled then
-        toggleSpeedAction()
-    end
+    if speedActive ~= enabled then toggleSpeedAction() end
 end)
 
 createToggleRow(MovementContainer, "Show Mobile Buttons 📱", false, function(enabled)
     FloatingHolder.Enabled = enabled
-    sendNotification("MOVEMENT", enabled and "Mobile floating buttons shown!" or "Mobile floating buttons hidden!")
 end)
--- ==========================================
--- MD GAMER SCRIPT (Part 2 - Server Hop & PVP Logic)
--- ==========================================
+
 local serverHopBtn = Instance.new("TextButton")
 serverHopBtn.Size = UDim2.new(1, -10, 0, 34)
 serverHopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
@@ -559,31 +547,23 @@ serverHopCorner.CornerRadius = UDim.new(0, 6)
 serverHopCorner.Parent = serverHopBtn
 
 serverHopBtn.MouseButton1Click:Connect(function()
-    sendNotification("🌐 Server Hop", "Scanning top-right server browser...")
+    sendNotification("🌐 Server Hop", "Scanning server browser...")
     task.spawn(function()
         pcall(function()
             local playerGui = LocalPlayer:WaitForChild("PlayerGui")
             local serverBrowser = playerGui:FindFirstChild("ServerBrowser", true) or playerGui:FindFirstChild("ServerBrowserUI", true)
-            
             if not serverBrowser and ReplicatedStorage:FindFirstChild("Remotes") then
-                pcall(function()
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("ServerBrowser")
-                end)
+                pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ServerBrowser") end)
                 task.wait(0.6)
                 serverBrowser = playerGui:FindFirstChild("ServerBrowser", true) or playerGui:FindFirstChild("ServerBrowserUI", true)
             end
-
             if serverBrowser then
                 local refreshBtn = serverBrowser:FindFirstChild("Refresh", true)
                 if refreshBtn then
-                    if firesignal then
-                        firesignal(refreshBtn.MouseButton1Click)
-                    elseif getconnections then
-                        for _, conn in ipairs(getconnections(refreshBtn.MouseButton1Click)) do conn:Fire() end
-                    end
+                    if firesignal then firesignal(refreshBtn.MouseButton1Click)
+                    elseif getconnections then for _, conn in ipairs(getconnections(refreshBtn.MouseButton1Click)) do conn:Fire() end end
                     task.wait(0.8)
                 end
-                
                 local bestJoinBtn = nil
                 for _, obj in ipairs(serverBrowser:GetDescendants()) do
                     if obj:IsA("TextButton") or obj:IsA("ImageButton") then
@@ -593,19 +573,12 @@ serverHopBtn.MouseButton1Click:Connect(function()
                         end
                     end
                 end
-                
                 if bestJoinBtn then
-                    sendNotification("🌐 Connecting...", "Joining best browser server...")
-                    if firesignal then
-                        firesignal(bestJoinBtn.MouseButton1Click)
-                    elseif getconnections then
-                        for _, conn in ipairs(getconnections(bestJoinBtn.MouseButton1Click)) do conn:Fire() end
-                    end
+                    if firesignal then firesignal(bestJoinBtn.MouseButton1Click)
+                    elseif getconnections then for _, conn in ipairs(getconnections(bestJoinBtn.MouseButton1Click)) do conn:Fire() end end
                     return
                 end
             end
-            
-            sendNotification("⚠️ Notice", "Executing safe fallback hop...")
             TeleportService:Teleport(game.PlaceId, LocalPlayer)
         end)
     end)
@@ -625,10 +598,7 @@ rejoinCorner.CornerRadius = UDim.new(0, 6)
 rejoinCorner.Parent = rejoinBtn
 
 rejoinBtn.MouseButton1Click:Connect(function()
-    sendNotification("🔄 Rejoining...", "Reconnecting...")
-    pcall(function()
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-    end)
+    pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer) end)
 end)
 
 local copyJobBtn = Instance.new("TextButton")
@@ -645,43 +615,22 @@ copyJobCorner.CornerRadius = UDim.new(0, 6)
 copyJobCorner.Parent = copyJobBtn
 
 copyJobBtn.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard(game.JobId)
-        sendNotification("📋 Copied!", "JobID copied to clipboard.")
-    end
+    if setclipboard then setclipboard(game.JobId) sendNotification("📋 Copied!", "JobID copied.") end
 end)
 
-createToggleRow(PvpContainer, "Aimbot Nearest", false, function(enabled)
-    aimbotNearestEnabled = enabled
-end)
-
-createToggleRow(PvpContainer, "Ignore Mobs", false, function(enabled)
-    ignoreMobsEnabled = enabled
-end)
-
-createToggleRow(PvpContainer, "Ignore Players", false, function(enabled)
-    ignorePlayersEnabled = enabled
-end)
-
-createToggleRow(PvpContainer, "Kill Aura (No Anim)", false, function(enabled)
-    killAuraEnabled = enabled
-end)
+createToggleRow(PvpContainer, "Aimbot Nearest", false, function(enabled) aimbotNearestEnabled = enabled end)
+createToggleRow(PvpContainer, "Ignore Mobs", false, function(enabled) ignoreMobsEnabled = enabled end)
+createToggleRow(PvpContainer, "Ignore Players", false, function(enabled) ignorePlayersEnabled = enabled end)
+createToggleRow(PvpContainer, "Kill Aura (No Anim)", false, function(enabled) killAuraEnabled = enabled end)
 
 local netFolder = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage:FindFirstChild("Net") or ReplicatedStorage
-
 local function triggerAdvancedAttack(equippedTool, targetPart)
     pcall(function()
         equippedTool:Activate()
-
         local registerAttack = netFolder:FindFirstChild("RegisterAttack") or netFolder:FindFirstChild("CommF_")
-        if registerAttack and registerAttack:IsA("RemoteEvent") then
-            registerAttack:FireServer()
-        end
-
-        local validatorRemote = netFolder:FindFirstChild("Validator") or netFolder:FindFirstChild("Validator2") or ReplicatedStorage:FindFirstChild("Validator", true)
-        if validatorRemote and validatorRemote:IsA("RemoteEvent") then
-            validatorRemote:FireServer(equippedTool.Name, targetPart)
-        end
+        if registerAttack and registerAttack:IsA("RemoteEvent") then registerAttack:FireServer() end
+        local validatorRemote = netFolder:FindFirstChild("Validator") or ReplicatedStorage:FindFirstChild("Validator", true)
+        if validatorRemote and validatorRemote:IsA("RemoteEvent") then validatorRemote:FireServer(equippedTool.Name, targetPart) end
     end)
 end
 
@@ -692,34 +641,25 @@ task.spawn(function()
                 local char = LocalPlayer.Character
                 local hrp = char.HumanoidRootPart
                 local equippedTool = char:FindFirstChildOfClass("Tool")
-                
                 if equippedTool then
                     local function checkAndAttack(targetHRP)
-                        if (hrp.Position - targetHRP.Position).Magnitude <= 50 then
-                            triggerAdvancedAttack(equippedTool, targetHRP)
-                        end
+                        if (hrp.Position - targetHRP.Position).Magnitude <= 50 then triggerAdvancedAttack(equippedTool, targetHRP) end
                     end
-                    
                     if not ignorePlayersEnabled then
                         for _, player in ipairs(Players:GetPlayers()) do
                             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                                 local pHum = player.Character:FindFirstChildOfClass("Humanoid")
-                                if pHum and pHum.Health > 0 then 
-                                    checkAndAttack(player.Character.HumanoidRootPart) 
-                                end
+                                if pHum and pHum.Health > 0 then checkAndAttack(player.Character.HumanoidRootPart) end
                             end
                         end
                     end
-                    
                     if not ignoreMobsEnabled then
                         local enemiesFolder = Workspace:FindFirstChild("Enemies")
                         if enemiesFolder then
                             for _, enemy in ipairs(enemiesFolder:GetChildren()) do
                                 local eHRP = enemy:FindFirstChild("HumanoidRootPart")
                                 local eHum = enemy:FindFirstChildOfClass("Humanoid")
-                                if eHRP and eHum and eHum.Health > 0 then 
-                                    checkAndAttack(eHRP) 
-                                end
+                                if eHRP and eHum and eHum.Health > 0 then checkAndAttack(eHRP) end
                             end
                         end
                     end
@@ -729,55 +669,8 @@ task.spawn(function()
     end
 end)
 -- ==========================================
--- MD GAMER SCRIPT (Part 3 - PVP Engine & Fly)
+-- MD GAMER SCRIPT (Part 4/4)
 -- ==========================================
-RunService.RenderStepped:Connect(function()
-    if aimbotNearestEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        pcall(function()
-            local hrp = LocalPlayer.Character.HumanoidRootPart
-            local nearestTarget = nil
-            local shortestDist = math.huge
-
-            if not ignorePlayersEnabled then
-                for _, player in ipairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        local pHum = player.Character:FindFirstChildOfClass("Humanoid")
-                        if pHum and pHum.Health > 0 then
-                            local dist = (hrp.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                            if dist < shortestDist then
-                                shortestDist = dist
-                                nearestTarget = player.Character.HumanoidRootPart
-                            end
-                        end
-                    end
-                end
-            end
-
-            if not ignoreMobsEnabled then
-                local enemiesFolder = Workspace:FindFirstChild("Enemies")
-                if enemiesFolder then
-                    for _, enemy in ipairs(enemiesFolder:GetChildren()) do
-                        local eHRP = enemy:FindFirstChild("HumanoidRootPart")
-                        local eHum = enemy:FindFirstChildOfClass("Humanoid")
-                        if eHRP and eHum and eHum.Health > 0 then
-                            local dist = (hrp.Position - eHRP.Position).Magnitude
-                            if dist < shortestDist then
-                                shortestDist = dist
-                                nearestTarget = eHRP
-                            end
-                        end
-                    end
-                end
-            end
-
-            if nearestTarget then
-                local targetPos = Vector3.new(nearestTarget.Position.X, hrp.Position.Y, nearestTarget.Position.Z)
-                hrp.CFrame = CFrame.new(hrp.Position, targetPos)
-            end
-        end)
-    end
-end)
-
 local function cleanLagEffects(v)
     if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("Explosion") or v:IsA("Beam") or v:IsA("Trail") or v:IsA("Highlight") then
         v:Destroy()
@@ -790,132 +683,52 @@ local function executeBalancedFPSBoost()
     Lighting.GlobalShadows = false
     Lighting.FogEnd = 9e9
     Lighting.FogStart = 9e9
-
     for _, obj in ipairs(Lighting:GetChildren()) do
-        if obj:IsA("PostEffect") or obj:IsA("Atmosphere") or obj:IsA("Clouds") or obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("DepthOfFieldEffect") or obj:IsA("SunRaysEffect") then
-            obj:Destroy()
-        end
+        if obj:IsA("PostEffect") or obj:IsA("Atmosphere") or obj:IsA("Clouds") or obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("DepthOfFieldEffect") or obj:IsA("SunRaysEffect") then obj:Destroy() end
     end
-
-    local cam = Workspace.CurrentCamera
-    if cam then
-        for _, obj in ipairs(cam:GetChildren()) do
-            if obj:IsA("PostEffect") or obj:IsA("DepthOfFieldEffect") or obj:IsA("BlurEffect") then
-                obj:Destroy()
-            end
-        end
-    end
-
-    for _, v in ipairs(Workspace:GetDescendants()) do
-        pcall(function()
-            cleanLagEffects(v)
-        end)
-    end
+    for _, v in ipairs(Workspace:GetDescendants()) do pcall(function() cleanLagEffects(v) end) end
 end
 
 task.spawn(function()
     while true do
         task.wait(3)
-        if fpsBoostEnabled then
-            pcall(executeBalancedFPSBoost)
-        end
+        if fpsBoostEnabled then pcall(executeBalancedFPSBoost) end
     end
 end)
 
-Workspace.DescendantAdded:Connect(function(v)
-    if fpsBoostEnabled then
-        task.wait()
-        pcall(function()
-            cleanLagEffects(v)
-        end)
-    end
-end)
-
-ToggleButton.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-end)
+ToggleButton.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
 local function flyTo(targetCFrame)
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-
     local hrp = char.HumanoidRootPart
     local distance = (hrp.Position - targetCFrame.Position).Magnitude
-    local flySpeed = 250
-    local duration = distance / flySpeed
-
+    local duration = distance / 250
     local startTime = tick()
     local startCFrame = hrp.CFrame
     local connection
-
     connection = RunService.RenderStepped:Connect(function()
-        local elapsed = tick() - startTime
-        local alpha = math.clamp(elapsed / duration, 0, 1)
-        
+        local alpha = math.clamp((tick() - startTime) / duration, 0, 1)
         if hrp and hrp.Parent then
             hrp.Velocity = Vector3.zero
             hrp.CFrame = startCFrame:Lerp(targetCFrame, alpha)
         end
-
-        if alpha >= 1 or not hrp or not hrp.Parent then
-            connection:Disconnect()
-        end
+        if alpha >= 1 or not hrp or not hrp.Parent then connection:Disconnect() end
     end)
-
     task.wait(duration)
     if connection then connection:Disconnect() end
 end
 
 local seaIslands = {
-    [2753915549] = { -- First Sea
-        ["Starter Island"] = Vector3.new(1090, 16, 1400),
-        ["Jungle"] = Vector3.new(-1240, 12, 380),
-        ["Pirate Village"] = Vector3.new(-1120, 4, 3850),
-        ["Desert"] = Vector3.new(1090, 6, 4360),
-        ["Middle Town"] = Vector3.new(-650, 15, 1500),
-        ["Frozen Village"] = Vector3.new(1150, 7, -1150),
-        ["Marine Ford"] = Vector3.new(-4800, 20, 4200),
-        ["Skypiea"] = Vector3.new(-4850, 718, -2620),
-        ["Prison"] = Vector3.new(4850, 5, 740),
-        ["Colosseum"] = Vector3.new(-1450, 7, -2750),
-        ["Magma Village"] = Vector3.new(-5250, 8, 8500),
-        ["Underwater City"] = Vector3.new(3860, 5, -1920),
-        ["Fountain City"] = Vector3.new(5120, 4, 4100)
-    },
-    [4442272183] = { -- Second Sea
-        ["Cafe"] = Vector3.new(-380, 73, 300),
-        ["Kingdom of Rose"] = Vector3.new(-450, 73, 1500),
-        ["Ushapp's Island"] = Vector3.new(4800, 8, 2800),
-        ["Green Zone"] = Vector3.new(-2400, 73, -3200),
-        ["Graveyard"] = Vector3.new(-5400, 48, -750),
-        ["Snow Mountain"] = Vector3.new(1300, 400, -1300),
-        ["Hot and Cold"] = Vector3.new(-6100, 15, -5000),
-        ["Cursed Ship"] = Vector3.new(900, 125, 3300),
-        ["Ice Castle"] = Vector3.new(5500, 28, -6200),
-        ["Forgotten Island"] = Vector3.new(-3050, 235, -10150)
-    },
-    [7449423635] = { -- Third Sea
-        ["Port Town"] = Vector3.new(-2900, 15, 5300),
-        ["Great Tree"] = Vector3.new(2250, 25, -7200),
-        ["Floating Turtle"] = Vector3.new(-13200, 330, -7600),
-        ["Castle on the Sea"] = Vector3.new(-5000, 315, -3000),
-        ["Haunted Castle"] = Vector3.new(-9500, 140, 5500),
-        ["Chocolate Land"] = Vector3.new(100, 25, -12100),
-        ["Ice Cream Land"] = Vector3.new(-900, 65, -11000),
-        ["Tiki Outpost"] = Vector3.new(-16200, 10, 500)
-    }
+    [2753915549] = { ["Starter Island"] = Vector3.new(1090, 16, 1400), ["Jungle"] = Vector3.new(-1240, 12, 380), ["Middle Town"] = Vector3.new(-650, 15, 1500), ["Frozen Village"] = Vector3.new(1150, 7, -1150), ["Marine Ford"] = Vector3.new(-4800, 20, 4200), ["Skypiea"] = Vector3.new(-4850, 718, -2620), ["Prison"] = Vector3.new(4850, 5, 740), ["Magma Village"] = Vector3.new(-5250, 8, 8500) },
+    [4442272183] = { ["Cafe"] = Vector3.new(-380, 73, 300), ["Kingdom of Rose"] = Vector3.new(-450, 73, 1500), ["Green Zone"] = Vector3.new(-2400, 73, -3200), ["Snow Mountain"] = Vector3.new(1300, 400, -1300), ["Hot and Cold"] = Vector3.new(-6100, 15, -5000), ["Ice Castle"] = Vector3.new(5500, 28, -6200) },
+    [7449423635] = { ["Port Town"] = Vector3.new(-2900, 15, 5300), ["Great Tree"] = Vector3.new(2250, 25, -7200), ["Castle on the Sea"] = Vector3.new(-5000, 315, -3000), ["Tiki Outpost"] = Vector3.new(-16200, 10, 500) }
 }
 
--- Dynamic Island Loader Function
 local function loadIslandButtons()
-    -- Clear previous island buttons
     for _, child in ipairs(IslandContainer:GetChildren()) do
-        if not child:IsA("UIListLayout") then
-            child:Destroy()
-        end
+        if not child:IsA("UIListLayout") then child:Destroy() end
     end
-
-    -- Top Refresh Button
     local refreshBtn = Instance.new("TextButton")
     refreshBtn.Size = UDim2.new(1, -10, 0, 34)
     refreshBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
@@ -925,20 +738,10 @@ local function loadIslandButtons()
     refreshBtn.TextSize = 11
     refreshBtn.Parent = IslandContainer
 
-    local refreshCorner = Instance.new("UICorner")
-    refreshCorner.CornerRadius = UDim.new(0, 6)
-    refreshCorner.Parent = refreshBtn
-
-    refreshBtn.MouseButton1Click:Connect(function()
-        loadIslandButtons()
-        sendNotification("🏝️ Map Refreshed", "Loaded islands for current Sea!")
-    end)
+    refreshBtn.MouseButton1Click:Connect(function() loadIslandButtons() sendNotification("🏝️ Map Refreshed", "Loaded!") end)
 
     local currentSeaIslands = seaIslands[game.PlaceId] or seaIslands[2753915549]
-    local totalIslands = 1
-
     for islandName, pos in pairs(currentSeaIslands) do
-        totalIslands = totalIslands + 1
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, -10, 0, 32)
         btn.BackgroundColor3 = Color3.fromRGB(22, 22, 35)
@@ -953,162 +756,134 @@ local function loadIslandButtons()
         btnCorner.CornerRadius = UDim.new(0, 6)
         btnCorner.Parent = btn
 
-        btn.MouseButton1Click:Connect(function()
-            sendNotification("🏝️ Flying...", islandName)
-            flyTo(CFrame.new(pos))
-        end)
+        btn.MouseButton1Click:Connect(function() flyTo(CFrame.new(pos)) end)
     end
-
-    IslandContainer.CanvasSize = UDim2.new(0, 0, 0, totalIslands * 38)
 end
-
--- Initial Load
 loadIslandButtons()
 
--- ==========================================
--- MD GAMER SCRIPT (Part 4 - ESP & Main Engine)
--- ==========================================
-local function checkFruitsForNotification(isNewSpawn)
-    for _, obj in ipairs(Workspace:GetChildren()) do
-        if isFruit(obj) and not notifiedFruits[obj] then
-            notifiedFruits[obj] = true
-            sendNotification(isNewSpawn and "🍎 Fruit Spawned!" or "🍇 Fruit Found:", obj.Name)
-        end
+local function removeIslandESP()
+    for _, item in ipairs(islandESPObjects) do if item then item:Destroy() end end
+    islandESPObjects = {}
+end
+
+local function updateIslandESP()
+    removeIslandESP()
+    if not islandESPEnabled then return end
+    local currentSeaIslands = seaIslands[game.PlaceId] or seaIslands[2753915549]
+    for islandName, pos in pairs(currentSeaIslands) do
+        local part = Instance.new("Part")
+        part.Size = Vector3.new(1, 1, 1)
+        part.Position = pos
+        part.Anchored = true
+        part.Transparency = 1
+        part.CanCollide = false
+        part.Parent = Workspace
+
+        local bbGui = Instance.new("BillboardGui")
+        bbGui.Name = "IslandESP"
+        bbGui.Adornee = part
+        bbGui.Size = UDim2.new(0, 200, 0, 50)
+        bbGui.StudsOffset = Vector3.new(0, 5, 0)
+        bbGui.AlwaysOnTop = true
+        bbGui.Parent = part
+
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.TextColor3 = Color3.fromRGB(139, 69, 19)
+        label.TextSize = 13
+        label.Font = Enum.Font.GothamBold
+        label.Parent = bbGui
+
+        table.insert(islandESPObjects, part)
+        table.insert(islandESPObjects, bbGui)
+
+        task.spawn(function()
+            while islandESPEnabled and part and part.Parent do
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local dist = math.floor((hrp.Position - pos).Magnitude)
+                    label.Text = string.format("🏝️ %s\n[%dm]", islandName, dist)
+                end
+                task.wait(0.5)
+            end
+        end)
     end
 end
 
 local function removeFruitESP()
-    for _, item in ipairs(fruitESPObjects) do
-        if item and item.Parent then item:Destroy() end
-    end
+    for _, item in ipairs(fruitESPObjects) do if item then item:Destroy() end end
     fruitESPObjects = {}
 end
 
 local function updateFruitESP()
     removeFruitESP()
     if not fruitESPEnabled then return end
-
     for _, obj in ipairs(Workspace:GetChildren()) do
         if isFruit(obj) then
             local handle = obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")
             if handle then
-                local highlight = Instance.new("Highlight")
-                highlight.FillColor = Color3.fromRGB(0, 170, 255)
-                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                highlight.Parent = obj
-                table.insert(fruitESPObjects, highlight)
-
-                local bbGui = Instance.new("BillboardGui")
-                bbGui.Name = "FruitESP"
-                bbGui.Adornee = handle
-                bbGui.Size = UDim2.new(0, 150, 0, 30)
-                bbGui.StudsOffset = Vector3.new(0, 2, 0)
-                bbGui.AlwaysOnTop = true
-                bbGui.Parent = handle
-
-                local label = Instance.new("TextLabel")
-                label.Size = UDim2.new(1, 0, 1, 0)
-                label.BackgroundTransparency = 1
-                label.TextColor3 = Color3.fromRGB(0, 255, 200)
-                label.TextSize = 13
-                label.Font = Enum.Font.GothamBold
-                label.Text = "🍇 " .. obj.Name
-                label.Parent = bbGui
-
-                table.insert(fruitESPObjects, bbGui)
+                local hl = Instance.new("Highlight")
+                hl.FillColor = Color3.fromRGB(0, 170, 255)
+                hl.Parent = obj
+                table.insert(fruitESPObjects, hl)
             end
         end
     end
 end
 
 local function removePlayerESP()
-    for _, item in ipairs(playerESPObjects) do
-        if item and item.Parent then item:Destroy() end
-    end
+    for _, item in ipairs(playerESPObjects) do if item then item:Destroy() end end
     playerESPObjects = {}
 end
 
 local function updatePlayerESP()
     removePlayerESP()
     if not playerESPEnabled then return end
-
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-            local char = player.Character
-            local head = char.Head
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-
-            if humanoid and humanoid.Health > 0 then
-                local pName = player.DisplayName or player.Name
-                local levelText = "?"
-                if player:FindFirstChild("Data") and player.Data:FindFirstChild("Level") then
-                    levelText = tostring(player.Data.Level.Value)
-                elseif player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Level") then
-                    levelText = tostring(player.leaderstats.Level.Value)
-                end
-
-                local nameColor = Color3.fromRGB(255, 80, 80)
-                if player.Team and (player.Team.Name == "Marines" or player.Team.Name == "Marine") then
-                    nameColor = Color3.fromRGB(135, 206, 235)
-                end
-
+            local head = player.Character.Head
+            local hum = player.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
                 local bbGui = Instance.new("BillboardGui")
-                bbGui.Name = "PlayerESP"
                 bbGui.Adornee = head
                 bbGui.Size = UDim2.new(0, 160, 0, 45)
                 bbGui.StudsOffset = Vector3.new(0, 2.5, 0)
                 bbGui.AlwaysOnTop = true
                 bbGui.Parent = head
-
                 local label = Instance.new("TextLabel")
                 label.Size = UDim2.new(1, 0, 1, 0)
                 label.BackgroundTransparency = 1
-                label.TextColor3 = nameColor
+                label.TextColor3 = Color3.fromRGB(255, 80, 80)
                 label.TextSize = 12
                 label.Font = Enum.Font.GothamBold
                 label.Parent = bbGui
-
                 table.insert(playerESPObjects, bbGui)
-
-                task.spawn(function()
-                    while playerESPEnabled and char and char.Parent and humanoid and humanoid.Health > 0 do
-                        label.Text = string.format("%s [Lvl %s]\nHP: %d/%d", pName, levelText, math.floor(humanoid.Health), math.floor(humanoid.MaxHealth))
-                        task.wait(0.5)
-                    end
-                    if bbGui then bbGui:Destroy() end
-                end)
             end
         end
     end
 end
 
-createToggleRow(MainContainer, "Fruit ESP", false, function(enabled)
-    fruitESPEnabled = enabled
-    updateFruitESP()
-end)
+createToggleRow(MainContainer, "Fruit ESP", false, function(enabled) fruitESPEnabled = enabled updateFruitESP() end)
+createToggleRow(MainContainer, "Player ESP", false, function(enabled) playerESPEnabled = enabled updatePlayerESP() end)
+createToggleRow(MainContainer, "Auto Fly Collect", false, function(enabled) autoCollectEnabled = enabled end)
+createToggleRow(MainContainer, "Auto Collect Chest", false, function(enabled) autoCollectChestEnabled = enabled end)
+createToggleRow(MainContainer, "Island ESP", false, function(enabled) islandESPEnabled = enabled updateIslandESP() end)
+createToggleRow(MainContainer, "FPS Boost", false, function(enabled) fpsBoostEnabled = enabled if enabled then pcall(executeBalancedFPSBoost) end end)
 
-createToggleRow(MainContainer, "Player ESP", false, function(enabled)
-    playerESPEnabled = enabled
-    updatePlayerESP()
-end)
-
-createToggleRow(MainContainer, "Auto Fly Collect", false, function(enabled)
-    autoCollectEnabled = enabled
-end)
-
-createToggleRow(MainContainer, "FPS Boost", false, function(enabled)
-    fpsBoostEnabled = enabled
-    if enabled then
-        pcall(executeBalancedFPSBoost)
-        sendNotification("🚀 FPS Boost", "Balanced Mode Active (Textures Safe!)")
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    if playerESPEnabled and math.random(1, 30) == 1 then
-        updatePlayerESP()
-    end
+TabExitBtn.MouseButton1Click:Connect(function()
+    autoCollectEnabled = false
+    autoCollectChestEnabled = false
+    islandESPEnabled = false
+    fruitESPEnabled = false
+    playerESPEnabled = false
+    fpsBoostEnabled = false
+    removeFruitESP()
+    removePlayerESP()
+    removeIslandESP()
+    if ScreenGui then ScreenGui:Destroy() end
+    if FloatingHolder then FloatingHolder:Destroy() end
 end)
 
 task.spawn(function()
@@ -1117,22 +892,26 @@ task.spawn(function()
             for _, obj in ipairs(Workspace:GetChildren()) do
                 if isFruit(obj) then
                     local handle = obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")
-                    if handle then
-                        flyTo(handle.CFrame)
-                        break
-                    end
+                    if handle then flyTo(handle.CFrame) break end
                 end
             end
         end
     end
 end)
 
-checkFruitsForNotification(false)
-
-Workspace.ChildAdded:Connect(function()
-    task.wait(0.5)
-    if fruitESPEnabled then updateFruitESP() end
-    checkFruitsForNotification(true)
+task.spawn(function()
+    while task.wait(1.5) do
+        if autoCollectChestEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            pcall(function()
+                for _, obj in ipairs(Workspace:GetDescendants()) do
+                    if autoCollectChestEnabled and isChest(obj) then
+                        local chestPart = obj:FindFirstChild("RootPart") or obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")
+                        if chestPart then flyTo(chestPart.CFrame) task.wait(0.5) end
+                    end
+                end
+            end)
+        end
+    end
 end)
 
-sendNotification("🎮 MD GAMER SCRIPT", "Successfully Loaded!")
+sendNotification("🎮 MD GAMER", "Loaded successfully!")
