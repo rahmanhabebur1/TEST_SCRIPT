@@ -1,4 +1,4 @@
--- Delta Executor Round Dragon Icon & Smooth UI
+-- Delta Executor Visible Round DRAGON Icon & Smooth UI (Updated Close Button)
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -16,41 +16,65 @@ ScreenGui.Parent = CoreGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
--- 2. Floating Round Dragon Icon Container
+-- 2. Fully Visible Round Icon Frame
 local IconFrame = Instance.new("Frame")
 IconFrame.Name = "IconFrame"
 IconFrame.Parent = ScreenGui
 IconFrame.Position = UDim2.new(0.85, 0, 0.75, 0)
-IconFrame.Size = UDim2.new(0, 65, 0, 65)
-IconFrame.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
-IconFrame.BackgroundTransparency = 0.2
+IconFrame.Size = UDim2.new(0, 70, 0, 70)
+IconFrame.BackgroundColor3 = Color3.fromRGB(15, 23, 42) -- Dark Sleek Background
+IconFrame.BackgroundTransparency = 0.1 -- Fully Visible
+IconFrame.Active = true
 IconFrame.ZIndex = 10
 
--- গোল শেপ দেওয়ার জন্য UICorner
+-- গোল শেপ (100% Round Circle)
 local IconCorner = Instance.new("UICorner")
-IconCorner.CornerRadius = UDim.new(1, 0) -- 100% Round Circle Shape
+IconCorner.CornerRadius = UDim.new(1, 0)
 IconCorner.Parent = IconFrame
 
--- বর্ডারে গ্লো আনার জন্য UIStroke
+-- Neon Pink Border Stroke
 local IconStroke = Instance.new("UIStroke")
-IconStroke.Color = Color3.fromRGB(236, 72, 153) -- Neon Pink Glow
-IconStroke.Thickness = 2
+IconStroke.Color = Color3.fromRGB(236, 72, 153)
+IconStroke.Thickness = 2.5
 IconStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 IconStroke.Parent = IconFrame
 
--- ড্রাগন ইমেজের জন্য ImageButton
-local DragonImg = Instance.new("ImageButton")
-DragonImg.Name = "DragonImg"
-DragonImg.Parent = IconFrame
-DragonImg.AnchorPoint = Vector2.new(0.5, 0.5)
-DragonImg.Position = UDim2.new(0.5, 0, 0.5, 0)
-DragonImg.Size = UDim2.new(0.85, 0, 0.85, 0) -- গোল ফ্রেমের ভেতরে সুন্দর করে ফিট থাকবে
-DragonImg.BackgroundTransparency = 1
-DragonImg.Image = "rbxassetid://13898239070" -- High Quality Dragon Image/Decal
-DragonImg.ScaleType = Enum.ScaleType.Fit
-DragonImg.ZIndex = 11
+-- Icon Inner Button
+local IconBtn = Instance.new("TextButton")
+IconBtn.Name = "IconBtn"
+IconBtn.Parent = IconFrame
+IconBtn.Size = UDim2.new(1, 0, 1, 0)
+IconBtn.BackgroundTransparency = 1
+IconBtn.Text = ""
+IconBtn.ZIndex = 12
 
--- 3. UI Modal Window (স্ক্রিনের ঠিক মাঝখানে ওপেন হবে)
+-- Text Label "DRAGON" Inside Icon
+local IconText = Instance.new("TextLabel")
+IconText.Name = "IconText"
+IconText.Parent = IconFrame
+IconText.AnchorPoint = Vector2.new(0.5, 0.5)
+IconText.Position = UDim2.new(0.5, 0, 0.42, 0)
+IconText.Size = UDim2.new(1, -10, 0, 20)
+IconText.BackgroundTransparency = 1
+IconText.Text = "DRAGON"
+IconText.TextColor3 = Color3.fromRGB(255, 255, 255)
+IconText.TextSize = 13
+IconText.Font = Enum.Font.FredokaOne
+IconText.ZIndex = 11
+
+-- Dragon Emblem Emoji Below Text
+local SubText = Instance.new("TextLabel")
+SubText.Name = "SubText"
+SubText.Parent = IconFrame
+SubText.AnchorPoint = Vector2.new(0.5, 0.5)
+SubText.Position = UDim2.new(0.5, 0, 0.70, 0)
+SubText.Size = UDim2.new(1, 0, 0, 18)
+SubText.BackgroundTransparency = 1
+SubText.Text = "🐉"
+SubText.TextSize = 16
+SubText.ZIndex = 11
+
+-- 3. UI Modal Window (স্ক্রিনের ঠিক মাঝখানে থাকবে)
 local UIFrame = Instance.new("Frame")
 UIFrame.Name = "UIFrame"
 UIFrame.Parent = ScreenGui
@@ -96,19 +120,19 @@ Title.TextSize = 16
 Title.Font = Enum.Font.SourceSansBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Close Button (✕)
+-- Close Button (❌) - আপডেট করা হয়েছে
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Name = "CloseBtn"
 CloseBtn.Parent = Header
-CloseBtn.Position = UDim2.new(1, -35, 0, 6)
+CloseBtn.Position = UDim2.new(1, -38, 0, 6)
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.BackgroundTransparency = 1
-CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = Color3.fromRGB(148, 163, 184)
-CloseBtn.TextSize = 18
+CloseBtn.Text = "❌"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
 CloseBtn.Font = Enum.Font.SourceSansBold
 
--- Empty UI Body Area (খালি রাখার জন্য)
+-- Empty UI Body Area
 local UIBody = Instance.new("Frame")
 UIBody.Name = "UIBody"
 UIBody.Parent = UIFrame
@@ -184,6 +208,6 @@ local function toggleUI()
     end
 end
 
--- আইকনে এবং ক্লোজ বাটনে ক্লিকে টগল হবে
-DragonImg.MouseButton1Click:Connect(toggleUI)
+-- ক্লিকে UI ওপেন / ক্লোজ হবে
+IconBtn.MouseButton1Click:Connect(toggleUI)
 CloseBtn.MouseButton1Click:Connect(toggleUI)
