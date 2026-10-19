@@ -1,4 +1,4 @@
--- Delta Executor Visible Round DRAGON Icon & Smooth UI (Updated Close Button)
+-- Delta Executor Compact Draggable Dragon Icon & Smooth UI
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -16,63 +16,40 @@ ScreenGui.Parent = CoreGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
--- 2. Fully Visible Round Icon Frame
-local IconFrame = Instance.new("Frame")
-IconFrame.Name = "IconFrame"
-IconFrame.Parent = ScreenGui
-IconFrame.Position = UDim2.new(0.85, 0, 0.75, 0)
-IconFrame.Size = UDim2.new(0, 70, 0, 70)
-IconFrame.BackgroundColor3 = Color3.fromRGB(15, 23, 42) -- Dark Sleek Background
-IconFrame.BackgroundTransparency = 0.1 -- Fully Visible
-IconFrame.Active = true
-IconFrame.ZIndex = 10
+-- 2. Small Floating Round Dragon Icon Button (Draggable & Clickable)
+local IconBtn = Instance.new("ImageButton")
+IconBtn.Name = "IconBtn"
+IconBtn.Parent = ScreenGui
+IconBtn.Position = UDim2.new(0.88, 0, 0.78, 0)
+IconBtn.Size = UDim2.new(0, 50, 0, 50) -- ছোট সাইজ (50x50)
+IconBtn.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
+IconBtn.BackgroundTransparency = 0.15
+IconBtn.AutoButtonColor = false
+IconBtn.ZIndex = 10
 
 -- গোল শেপ (100% Round Circle)
 local IconCorner = Instance.new("UICorner")
 IconCorner.CornerRadius = UDim.new(1, 0)
-IconCorner.Parent = IconFrame
+IconCorner.Parent = IconBtn
 
 -- Neon Pink Border Stroke
 local IconStroke = Instance.new("UIStroke")
 IconStroke.Color = Color3.fromRGB(236, 72, 153)
-IconStroke.Thickness = 2.5
+IconStroke.Thickness = 2
 IconStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-IconStroke.Parent = IconFrame
+IconStroke.Parent = IconBtn
 
--- Icon Inner Button
-local IconBtn = Instance.new("TextButton")
-IconBtn.Name = "IconBtn"
-IconBtn.Parent = IconFrame
-IconBtn.Size = UDim2.new(1, 0, 1, 0)
-IconBtn.BackgroundTransparency = 1
-IconBtn.Text = ""
-IconBtn.ZIndex = 12
-
--- Text Label "DRAGON" Inside Icon
-local IconText = Instance.new("TextLabel")
-IconText.Name = "IconText"
-IconText.Parent = IconFrame
-IconText.AnchorPoint = Vector2.new(0.5, 0.5)
-IconText.Position = UDim2.new(0.5, 0, 0.42, 0)
-IconText.Size = UDim2.new(1, -10, 0, 20)
-IconText.BackgroundTransparency = 1
-IconText.Text = "DRAGON"
-IconText.TextColor3 = Color3.fromRGB(255, 255, 255)
-IconText.TextSize = 13
-IconText.Font = Enum.Font.FredokaOne
-IconText.ZIndex = 11
-
--- Dragon Emblem Emoji Below Text
-local SubText = Instance.new("TextLabel")
-SubText.Name = "SubText"
-SubText.Parent = IconFrame
-SubText.AnchorPoint = Vector2.new(0.5, 0.5)
-SubText.Position = UDim2.new(0.5, 0, 0.70, 0)
-SubText.Size = UDim2.new(1, 0, 0, 18)
-SubText.BackgroundTransparency = 1
-SubText.Text = "🐉"
-SubText.TextSize = 16
-SubText.ZIndex = 11
+-- Dragon Emoji Inside Icon
+local IconEmoji = Instance.new("TextLabel")
+IconEmoji.Name = "IconEmoji"
+IconEmoji.Parent = IconBtn
+IconEmoji.AnchorPoint = Vector2.new(0.5, 0.5)
+IconEmoji.Position = UDim2.new(0.5, 0, 0.5, 0)
+IconEmoji.Size = UDim2.new(1, 0, 1, 0)
+IconEmoji.BackgroundTransparency = 1
+IconEmoji.Text = "🐲"
+IconEmoji.TextSize = 24
+IconEmoji.ZIndex = 11
 
 -- 3. UI Modal Window (স্ক্রিনের ঠিক মাঝখানে থাকবে)
 local UIFrame = Instance.new("Frame")
@@ -120,7 +97,7 @@ Title.TextSize = 16
 Title.Font = Enum.Font.SourceSansBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Close Button (❌) - আপডেট করা হয়েছে
+-- Close Button (❌)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Name = "CloseBtn"
 CloseBtn.Parent = Header
@@ -141,17 +118,57 @@ UIBody.Size = UDim2.new(1, 0, 1, -42)
 UIBody.BackgroundTransparency = 1
 
 ----------------------------------------------------
--- DRAGGING FUNCTIONALITY (আইকন ও UI ২টাই ড্রাগ করা যাবে)
+-- DRAGGING & CLICK (TOGGLE) LOGIC FIXED
 ----------------------------------------------------
-local function makeDraggable(topbarObject, object)
+local function makeDraggable(object)
     local dragging = false
     local dragInput, dragStart, startPos
+    local moved = false
 
-    local function update(input)
-        local delta = input.Position - dragStart
-        local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        TweenService:Create(object, TweenInfo.new(0.08), {Position = newPos}):Play()
+    object.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            moved = false
+            dragStart = input.Position
+            startPos = object.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    object.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            if delta.Magnitude > 5 then
+                moved = true
+            end
+            local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            TweenService:Create(object, TweenInfo.new(0.05), {Position = newPos}):Play()
+        end
+    end)
+
+    return function()
+        return moved
     end
+end
+
+-- আইকন ড্রাগ লজিক চালু করা হলো
+local wasIconMoved = makeDraggable(IconBtn)
+
+-- UI Header Dragging
+local function makeHeaderDraggable(topbarObject, object)
+    local dragging = false
+    local dragInput, dragStart, startPos
 
     topbarObject.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -175,14 +192,14 @@ local function makeDraggable(topbarObject, object)
 
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
-            update(input)
+            local delta = input.Position - dragStart
+            local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            TweenService:Create(object, TweenInfo.new(0.05), {Position = newPos}):Play()
         end
     end)
 end
 
--- ড্রাগন আইকন এবং UI হেডারকে Draggable করা হলো
-makeDraggable(IconFrame, IconFrame)
-makeDraggable(Header, UIFrame)
+makeHeaderDraggable(Header, UIFrame)
 
 ----------------------------------------------------
 -- TOGGLE & SMOOTH ANIMATION
@@ -208,6 +225,11 @@ local function toggleUI()
     end
 end
 
--- ক্লিকে UI ওপেন / ক্লোজ হবে
-IconBtn.MouseButton1Click:Connect(toggleUI)
+-- আইকনে ক্লিক বা ট্যাপ করলে টগল হবে (যদি ড্রাগ না করা হয়)
+IconBtn.MouseButton1Click:Connect(function()
+    if not wasIconMoved() then
+        toggleUI()
+    end
+end)
+
 CloseBtn.MouseButton1Click:Connect(toggleUI)
