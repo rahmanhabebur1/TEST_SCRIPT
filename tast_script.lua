@@ -1,39 +1,40 @@
--- Delta Executor Dragon UI Script
+-- Delta Executor Transparent Dragon UI Script
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
--- আগের কোনো UI থাকলে ডিলিট করে দেবে
+-- আগের UI থাকলে ডিলিট করবে
 if CoreGui:FindFirstChild("DragonScriptUI") then
     CoreGui.DragonScriptUI:Destroy()
 end
 
--- 1. Main ScreenGui তৈরি
+-- 1. Main ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "DragonScriptUI"
 ScreenGui.Parent = CoreGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
--- 2. Floating Dragon Icon Button
+-- 2. Floating Transparent Dragon Icon Button
 local DragonBtn = Instance.new("ImageButton")
 DragonBtn.Name = "DragonBtn"
 DragonBtn.Parent = ScreenGui
-DragonBtn.BackgroundTransparency = 1 -- ব্যাকগ্রাউন্ড ফুল ট্রান্সপারেন্ট
+DragonBtn.BackgroundTransparency = 1  -- ব্যাকগ্রাউন্ড একদম ১০০% ট্রান্সপারেন্ট (কোনো বক্স বা ব্যাকগ্রাউন্ড থাকবে না)
+DragonBtn.BorderSizePixel = 0        -- কোনো বর্ডার থাকবে না
 DragonBtn.Position = UDim2.new(0.85, 0, 0.75, 0)
-DragonBtn.Size = UDim2.new(0, 60, 0, 60)
-DragonBtn.Image = "rbxassetid://11419730303" -- Vector Dragon Icon ID
-DragonBtn.ImageColor3 = Color3.fromRGB(236, 72, 153) -- Neon Pink Glow Color
+DragonBtn.Size = UDim2.new(0, 65, 0, 65)
+DragonBtn.Image = "rbxassetid://5669312251" -- Pure Transparent Dragon Vector Asset
+DragonBtn.ImageColor3 = Color3.fromRGB(236, 72, 153) -- Neon Dragon Glow Color
 DragonBtn.ZIndex = 10
 
--- 3. UI Modal Window (স্ক্রিনের মাঝখানে থাকবে)
+-- 3. UI Modal Window (স্ক্রিনের ঠিক মাঝখানে ওপেন হবে)
 local UIFrame = Instance.new("Frame")
 UIFrame.Name = "UIFrame"
 UIFrame.Parent = ScreenGui
 UIFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 UIFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-UIFrame.Size = UDim2.new(0, 0, 0, 0) -- শুরুতে সাইজ ০ থাকবে অ্যানিমেশনের জন্য
+UIFrame.Size = UDim2.new(0, 0, 0, 0) -- শুরুতে ০ সাইজ থাকবে
 UIFrame.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
 UIFrame.BackgroundTransparency = 0.15
 UIFrame.ClipsDescendants = true
@@ -73,7 +74,7 @@ Title.TextSize = 16
 Title.Font = Enum.Font.SourceSansBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Close Button (×)
+-- Close Button (✕)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Name = "CloseBtn"
 CloseBtn.Parent = Header
@@ -85,7 +86,7 @@ CloseBtn.TextColor3 = Color3.fromRGB(148, 163, 184)
 CloseBtn.TextSize = 18
 CloseBtn.Font = Enum.Font.SourceSansBold
 
--- Empty UI Body Area
+-- Empty UI Body (খালি রাখার জন্য)
 local UIBody = Instance.new("Frame")
 UIBody.Name = "UIBody"
 UIBody.Parent = UIFrame
@@ -133,7 +134,7 @@ local function makeDraggable(topbarObject, object)
     end)
 end
 
--- আইকন এবং UI হেডারকে Draggable করা হলো
+-- ড্রাগন আইকন ও UI হেডারকে Draggable করা হলো
 makeDraggable(DragonBtn, DragonBtn)
 makeDraggable(Header, UIFrame)
 
@@ -160,6 +161,6 @@ local function toggleUI()
     end
 end
 
--- ক্লিকে টগল হবে
+-- আইকনে এবং ক্লোজ বাটনে ক্লিকে টগল হবে
 DragonBtn.MouseButton1Click:Connect(toggleUI)
 CloseBtn.MouseButton1Click:Connect(toggleUI)
