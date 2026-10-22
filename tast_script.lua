@@ -1,327 +1,292 @@
--- Rayfield UI Library Load (HoHo Hub style interface)
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- HOHO HUB Style UI with Speed Slider (1.5 - 5.0) & Toggle
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HoHoHubCustomSlider"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ResetOnSpawn = false
 
-local Window = Rayfield:CreateWindow({
-   Name = "Blox Fruits - Hub",
-   LoadingTitle = "HoHo Style Hub",
-   LoadingSubtitle = "by Assistant",
-   ConfigurationSaving = { Enabled = false },
-   Discord = { Enabled = false },
-   KeySystem = false
-})
+-- Floating Toggle Icon (Show/Hide Button)
+local ToggleButton = Instance.new("ImageButton")
+ToggleButton.Name = "ToggleIcon"
+ToggleButton.Parent = ScreenGui
+ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+ToggleButton.Position = UDim2.new(0, 15, 0.4, 0)
+ToggleButton.Size = UDim2.new(0, 45, 0, 45)
+ToggleButton.Active = true
+ToggleButton.Draggable = true
+ToggleButton.Image = "rbxassetid://6031097225"
 
--- Services
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local LocalPlayer = Players.LocalPlayer
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 12)
+ToggleCorner.Parent = ToggleButton
 
--- Variables for Travel
-local activeTween = nil
-local noclipConnection = nil
-local currentTarget = nil
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Parent = ToggleButton
+ToggleStroke.Thickness = 2
+ToggleStroke.Color = Color3.fromRGB(255, 0, 100)
 
--- Noclip Function
-local function startNoclip()
-    if noclipConnection then noclipConnection:Disconnect() end
-    noclipConnection = RunService.Stepped:Connect(function()
-        if LocalPlayer.Character then
-            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
-            end
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+MainFrame.Position = UDim2.new(0.5, -210, 0.5, -125)
+MainFrame.Size = UDim2.new(0, 420, 0, 250)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 8)
+MainCorner.Parent = MainFrame
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Parent = MainFrame
+UIStroke.Thickness = 2
+UIStroke.Color = Color3.fromRGB(255, 0, 100)
+
+-- Header Title
+local Title = Instance.new("TextLabel")
+Title.Parent = MainFrame
+Title.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "   🌺 HOHO HUB | PRIVATE"
+Title.TextColor3 = Color3.fromRGB(255, 50, 130)
+Title.TextSize = 14
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 8)
+HeaderCorner.Parent = Title
+
+-- Sidebar
+local Sidebar = Instance.new("Frame")
+Sidebar.Name = "Sidebar"
+Sidebar.Parent = MainFrame
+Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+Sidebar.Position = UDim2.new(0, 5, 0, 40)
+Sidebar.Size = UDim2.new(0, 115, 1, -45)
+
+local SidebarCorner = Instance.new("UICorner")
+SidebarCorner.CornerRadius = UDim.new(0, 6)
+SidebarCorner.Parent = Sidebar
+
+-- Content Frame
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Parent = MainFrame
+ContentFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+ContentFrame.Position = UDim2.new(0, 125, 0, 40)
+ContentFrame.Size = UDim2.new(1, -130, 1, -45)
+
+local ContentCorner = Instance.new("UICorner")
+ContentCorner.CornerRadius = UDim.new(0, 6)
+ContentCorner.Parent = ContentFrame
+
+local Tabs = {}
+local tabCount = 0
+
+local function CreateTab(name)
+    tabCount = tabCount + 1
+    
+    local TabPage = Instance.new("Frame")
+    TabPage.Name = name .. "Page"
+    TabPage.Parent = ContentFrame
+    TabPage.Size = UDim2.new(1, -10, 1, -10)
+    TabPage.Position = UDim2.new(0, 5, 0, 5)
+    TabPage.BackgroundTransparency = 1
+    TabPage.Visible = false
+    
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Parent = TabPage
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 8)
+
+    local TabButton = Instance.new("TextButton")
+    TabButton.Name = name .. "Btn"
+    TabButton.Parent = Sidebar
+    TabButton.Size = UDim2.new(1, -8, 0, 32)
+    TabButton.Position = UDim2.new(0, 4, 0, (tabCount - 1) * 36 + 6)
+    TabButton.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+    TabButton.Font = Enum.Font.GothamBold
+    TabButton.Text = name
+    TabButton.TextColor3 = Color3.fromRGB(150, 150, 160)
+    TabButton.TextSize = 12
+    
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 5)
+    BtnCorner.Parent = TabButton
+
+    TabButton.MouseButton1Click:Connect(function()
+        for _, t in pairs(Tabs) do
+            t.Page.Visible = false
+            t.Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+            t.Btn.TextColor3 = Color3.fromRGB(150, 150, 160)
         end
+        TabPage.Visible = true
+        TabButton.BackgroundColor3 = Color3.fromRGB(255, 0, 100)
+        TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+
+    Tabs[name] = {Page = TabPage, Btn = TabButton}
+    return TabPage
+end
+
+local function AddButton(page, text, callback)
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(1, 0, 0, 35)
+    Btn.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+    Btn.Font = Enum.Font.GothamSemibold
+    Btn.Text = text
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.TextSize = 13
+    Btn.Parent = page
+    
+    local BCorner = Instance.new("UICorner")
+    BCorner.CornerRadius = UDim.new(0, 5)
+    BCorner.Parent = Btn
+
+    local BStroke = Instance.new("UIStroke")
+    BStroke.Parent = Btn
+    BStroke.Color = Color3.fromRGB(255, 0, 100)
+    BStroke.Thickness = 1
+    
+    Btn.MouseButton1Click:Connect(function()
+        callback(Btn)
     end)
 end
 
-local function stopNoclip()
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
-    end
-end
+-- Create Tabs
+local MainEspTab = CreateTab("📌 MAIN/ESP")
+local SettingsTab = CreateTab("⚙️ Settings")
 
--- Stop Traveling Function
-local function stopTravel()
-    if activeTween then
-        activeTween:Cancel()
-        activeTween = nil
-    end
-    stopNoclip()
-    currentTarget = nil
-end
+-- Set Main/ESP as Default Tab
+Tabs["📌 MAIN/ESP"].Page.Visible = true
+Tabs["📌 MAIN/ESP"].Btn.BackgroundColor3 = Color3.fromRGB(255, 0, 100)
+Tabs["📌 MAIN/ESP"].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
--- Safe Tween Function
-local function travelTo(targetCFrame, speed)
-    stopTravel()
-    
-    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
+-- Speed Variables
+local speedActive = false
+local speedMultiplier = 1.8 -- Default Value
 
-    startNoclip()
-
-    local distance = (rootPart.Position - targetCFrame.Position).Magnitude
-    local timeToTravel = distance / (speed or 350)
-
-    local tweenInfo = TweenInfo.new(timeToTravel, Enum.EasingStyle.Linear)
-    activeTween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})
-    
-    activeTween:Play()
-    
-    activeTween.Completed:Connect(function()
-        stopNoclip()
-        activeTween = nil
-    end)
-    return activeTween
-end
-
-
--- ============================================
--- ESP SYSTEM LOGIC
--- ============================================
-local espEnabled = false
-local espObjects = {}
-
-local function createESP(plr)
-    if plr == LocalPlayer then return end
-    
-    local function applyESP(chr)
-        if not chr then return end
-        local head = chr:WaitForChild("Head", 5)
-        local humanoid = chr:WaitForChild("Humanoid", 5)
-        if not head or not humanoid then return end
-
-        local bb = Instance.new("BillboardGui")
-        bb.Name = "ESP_Tag"
-        bb.Adornee = head
-        bb.Size = UDim2.new(0, 200, 0, 50)
-        bb.StudsOffset = Vector3.new(0, 3, 0)
-        bb.AlwaysOnTop = true
-        bb.Parent = head
-
-        local textLabel = Instance.new("TextLabel")
-        textLabel.Size = UDim2.new(1, 0, 1, 0)
-        textLabel.BackgroundTransparency = 1
-        textLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-        textLabel.TextStrokeTransparency = 0
-        textLabel.TextSize = 13
-        textLabel.Font = Enum.Font.SourceSansBold
-        textLabel.Parent = bb
-
-        local conn
-        conn = RunService.RenderStepped:Connect(function()
-            if not espEnabled or not chr or not chr:Parent() or not humanoid or humanoid.Health <= 0 then
-                bb:Destroy()
-                if conn then conn:Disconnect() end
-                return
+-- Toggle Button for Speed Bypass
+AddButton(MainEspTab, "⚡ Smooth Bypass Speed: OFF", function(btn)
+    speedActive = not speedActive
+    if speedActive then
+        btn.Text = "⚡ Smooth Bypass Speed: ON"
+        btn.TextColor3 = Color3.fromRGB(0, 255, 120)
+        task.spawn(function()
+            while speedActive do
+                task.wait(0.01)
+                pcall(function()
+                    local char = game.Players.LocalPlayer.Character
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    local hum = char:FindFirstChild("Humanoid")
+                    if hrp and hum and hum.MoveDirection.Magnitude > 0 then
+                        hrp.CFrame = hrp.CFrame + (hum.MoveDirection * speedMultiplier)
+                    end
+                end)
             end
-
-            local level = "N/A"
-            if plr:FindFirstChild("Data") and plr.Data:FindFirstChild("Level") then
-                level = tostring(plr.Data.Level.Value)
-            elseif plr:FindFirstChild("leaderstats") and plr.leaderstats:FindFirstChild("Level") then
-                level = tostring(plr.leaderstats.Level.Value)
-            end
-
-            local hp = math.floor(humanoid.Health)
-            local maxHp = math.floor(humanoid.MaxHealth)
-
-            textLabel.Text = string.format("%s\n[Lvl %s] | HP: %d/%d", plr.Name, level, hp, maxHp)
         end)
-
-        table.insert(espObjects, bb)
-    end
-
-    if plr.Character then
-        applyESP(plr.Character)
-    end
-    plr.CharacterAdded:Connect(applyESP)
-end
-
-local function toggleESP(state)
-    espEnabled = state
-    if not state then
-        for _, v in pairs(espObjects) do
-            if v and v.Parent then
-                v:Destroy()
-            end
-        end
-        espObjects = {}
     else
-        for _, plr in pairs(Players:GetPlayers()) do
-            createESP(plr)
-        end
-    end
-end
-
-Players.PlayerAdded:Connect(function(plr)
-    if espEnabled then
-        createESP(plr)
+        btn.Text = "⚡ Smooth Bypass Speed: OFF"
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     end
 end)
 
+-- Slider Functionality (1.5 to 5.0)
+local SliderFrame = Instance.new("Frame")
+SliderFrame.Name = "SpeedSliderFrame"
+SliderFrame.Parent = MainEspTab
+SliderFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+SliderFrame.Size = UDim2.new(1, 0, 0, 45)
 
--- ============================================
--- AUTO CHEST FARM LOGIC
--- ============================================
-local autoChest = false
+local SliderCorner = Instance.new("UICorner")
+SliderCorner.CornerRadius = UDim.new(0, 5)
+SliderCorner.Parent = SliderFrame
 
--- নিকটবর্তী সবচেয়ে কাছের Chest খুঁজে বের করার ফাংশন
-local function getClosestChest()
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+local SliderStroke = Instance.new("UIStroke")
+SliderStroke.Parent = SliderFrame
+SliderStroke.Color = Color3.fromRGB(255, 0, 100)
+SliderStroke.Thickness = 1
+
+local SliderTitle = Instance.new("TextLabel")
+SliderTitle.Parent = SliderFrame
+SliderTitle.BackgroundTransparency = 1
+SliderTitle.Position = UDim2.new(0, 10, 0, 2)
+SliderTitle.Size = UDim2.new(1, -20, 0, 20)
+SliderTitle.Font = Enum.Font.GothamSemibold
+SliderTitle.Text = "Speed Multiplier: 1.8"
+SliderTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+SliderTitle.TextSize = 12
+SliderTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local SliderBar = Instance.new("TextButton")
+SliderBar.Name = "SliderBar"
+SliderBar.Parent = SliderFrame
+SliderBar.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+SliderBar.Position = UDim2.new(0, 10, 0, 25)
+SliderBar.Size = UDim2.new(1, -20, 0, 12)
+SliderBar.AutoButtonColor = false
+SliderBar.Text = ""
+
+local BarCorner = Instance.new("UICorner")
+BarCorner.CornerRadius = UDim.new(0, 4)
+BarCorner.Parent = SliderBar
+
+local SliderFill = Instance.new("Frame")
+SliderFill.Name = "SliderFill"
+SliderFill.Parent = SliderBar
+SliderFill.BackgroundColor3 = Color3.fromRGB(255, 0, 100)
+-- Initial calculation for default value 1.8: (1.8 - 1.5) / (5.0 - 1.5) = 0.0857
+SliderFill.Size = UDim2.new(0.0857, 0, 1, 0)
+
+local FillCorner = Instance.new("UICorner")
+FillCorner.CornerRadius = UDim.new(0, 4)
+FillCorner.Parent = SliderFill
+
+local UserInputService = game:GetService("UserInputService")
+local dragging = false
+
+local function UpdateSlider(input)
+    local minVal = 1.5
+    local maxVal = 5.0
+    local mousePos = input.Position.X
+    local barPos = SliderBar.AbsolutePosition.X
+    local barSize = SliderBar.AbsoluteSize.X
     
-    local rootPart = character.HumanoidRootPart
-    local closest = nil
-    local shortestDistance = math.huge
-
-    for _, v in pairs(Workspace:GetDescendants()) do
-        if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("Model") then
-            if v.Name:find("Chest") then
-                local chestPart = v:IsA("Model") and (v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")) or v
-                if chestPart then
-                    local dist = (rootPart.Position - chestPart.Position).Magnitude
-                    if dist < shortestDistance then
-                        shortestDistance = dist
-                        closest = chestPart
-                    end
-                end
-            end
-        end
-    end
-    return closest
+    local percent = math.clamp((mousePos - barPos) / barSize, 0, 1)
+    speedMultiplier = minVal + (percent * (maxVal - minVal))
+    speedMultiplier = math.floor(speedMultiplier * 10) / 10 -- Round to 1 decimal place
+    
+    SliderFill.Size = UDim2.new(percent, 0, 1, 0)
+    SliderTitle.Text = "Speed Multiplier: " .. string.format("%.1f", speedMultiplier)
 end
 
--- Chest Farm Loop
-task.spawn(function()
-    while task.wait(0.5) do
-        if autoChest then
-            local chest = getClosestChest()
-            if chest and chest.Parent then
-                local tw = travelTo(chest.CFrame, 350)
-                if tw then
-                    tw.Completed:Wait()
-                    task.wait(0.2)
-                end
-            else
-                -- কোনো Chest না থাকলে সতর্কবার্তা দেবে
-                Rayfield:Notify({
-                   Title = "Searching Chests...",
-                   Content = "No chests found nearby. Retrying...",
-                   Duration = 2,
-                   Image = 4483362458
-                })
-                task.wait(3)
-            end
-        end
+SliderBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        UpdateSlider(input)
     end
 end)
 
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        UpdateSlider(input)
+    end
+end)
 
--- ============================================
--- UI TABS SETUP
--- ============================================
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
 
--- 1. Main/ESP Tab
-local EspTab = Window:CreateTab("Main/Esp", 4483362458)
-local EspSection = EspTab:CreateSection("ESP Visuals")
+-- Settings Tab Options
+AddButton(SettingsTab, "❌ Destroy Hub", function()
+    ScreenGui:Destroy()
+end)
 
-EspTab:CreateToggle({
-   Name = "Player ESP (Name, Level, HP)",
-   CurrentValue = false,
-   Flag = "Player_ESP_Toggle",
-   Callback = function(Value)
-       toggleESP(Value)
-   end,
-})
-
-local ChestSection = EspTab:CreateSection("Auto Farming")
-
-EspTab:CreateToggle({
-   Name = "Collect Chest",
-   CurrentValue = false,
-   Flag = "Collect_Chest_Toggle",
-   Callback = function(Value)
-       autoChest = Value
-       if not Value then
-           stopTravel()
-           Rayfield:Notify({
-              Title = "Chest Farm Stopped",
-              Content = "Auto chest collection disabled.",
-              Duration = 2,
-              Image = 4483362458
-           })
-       end
-   end,
-})
-
--- 2. Sea 2 Teleport Tab
-local Sea2Tab = Window:CreateTab("Sea 2 Teleport", 4483362458)
-local Sea2Section = Sea2Tab:CreateSection("Select Destination")
-
-local Sea2Islands = {
-    ["Kingdom of Rose (Cafe)"] = CFrame.new(-382, 73, 297),
-    ["Usoap's Island"]        = CFrame.new(4816, 8, 2863),
-    ["Green Zone"]            = CFrame.new(-2385, 73, -3025),
-    ["Graveyard Island"]      = CFrame.new(-5418, 48, -700),
-    ["Snow Mountain"]         = CFrame.new(623, 401, -5373),
-    ["Hot and Cold"]          = CFrame.new(-612, 16, -5024),
-    ["Cursed Ship"]           = CFrame.new(923, 125, 32885),
-    ["Ice Castle"]            = CFrame.new(5531, 28, -6282),
-    ["Forgotten Island"]      = CFrame.new(-3050, 237, -10175),
-    ["Dark Arena"]            = CFrame.new(3812, 18, -3520)
-}
-
-local islandToggles = {}
-
-for islandName, targetCFrame in pairs(Sea2Islands) do
-    islandToggles[islandName] = Sea2Tab:CreateToggle({
-        Name = islandName,
-        CurrentValue = false,
-        Flag = islandName .. "_Toggle",
-        Callback = function(Value)
-            if Value then
-                for otherName, toggleObj in pairs(islandToggles) do
-                    if otherName ~= islandName then
-                        toggleObj:Set(false)
-                    end
-                end
-                
-                currentTarget = islandName
-                travelTo(targetCFrame, 350)
-                
-                Rayfield:Notify({
-                   Title = "Traveling...",
-                   Content = "Going to " .. islandName,
-                   Duration = 3,
-                   Image = 4483362458
-                })
-            else
-                if currentTarget == islandName then
-                    stopTravel()
-                    Rayfield:Notify({
-                       Title = "Travel Cancelled",
-                       Content = "Stopped traveling to " .. islandName,
-                       Duration = 3,
-                       Image = 4483362458
-                    })
-                end
-            end
-        end,
-    })
-end
-
--- Emergency Stop Button
-Sea2Tab:CreateButton({
-   Name = "🔴 Emergency Stop Travel",
-   Callback = function()
-       stopTravel()
-       autoChest = false
-       for _, toggleObj in pairs(islandToggles) do
-           toggleObj:Set(false)
-       end
-   end,
-})
+-- Show / Hide Toggle Functionality
+ToggleButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
